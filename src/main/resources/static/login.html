@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to Digital Voting</title>
+</head>
+<body>
+<style>
+    body {
+        font-family: Verdana, Geneva, sans-serif;
+    }
+    input {
+        font-size: 16px;  // make input fields at least 16px on small screens to avoid annoying iPhone
+    }
+    .newbutton {
+        border: none;
+        color: white;
+        padding: 4px;
+        font-size: 16px;
+        background-color: #2196F3;
+    }
+    .newbutton:hover {
+        font-size: 17px;
+        background: #0b7dda;
+    }
+    .loginbutton {
+        border: none;
+        color: white;
+        padding: 4px;
+        font-size: 16px;
+        background-color: #4CAF50;
+    }
+    .loginbutton:hover {
+        font-size: 17px;
+        background: #46a049;
+    }
+</style>
+<script>
+    function showNewUser() {
+        elm = document.getElementById("newuser");
+        elm.hidden = null;
+        elm = document.getElementById("login");
+        elm.hidden = "hidden";
+    }
+    function showLogin() {
+        elm = document.getElementById("login");
+        elm.hidden = null;
+        elm = document.getElementById("newuser");
+        elm.hidden = "hidden";
+    }
+    function togglePasswordVisibility() {
+        var el = document.getElementById("password");
+        if (el.type === "password") {
+            el.type = "text";
+        }
+        else {
+            el.type = "password";
+        }
+    }
+</script>
+<div id="login" >
+    <form method="POST" action="loginscript"   >
+        <label for="user">User name:</label><br/>
+        <input type="text" id="user" name="user" /><br/>
+        <label for="password">Password:</label><br/>
+        <input type="password" id="password" name="password" />
+        <input type="checkbox" id="toggle" onclick="togglePasswordVisibility()">
+        <label for="toggle">Show Password</label><br/>
+        <input type="submit" value="Submit" class="loginbutton" >
+    </form>
+    <hr/>
+    <button onclick="showNewUser()" class="newbutton">Create a New Account</button>
+</div>
+<div id="newuser" hidden="hidden" >
+    <button onclick="showLogin()" class="loginbutton">Log In As Existing User</button>
+    <hr/>
+    <form method="POST" action="newuser"  >
+        Fill out the form to create a new account:<br/>
+        <label for="user_new">User name:</label><br/>
+        <input type="text" id="user_new" name="user" /><br/>
+        <label for="password_new">Password:</label><br/>
+        <input type="password" id="password_new" name="password" /><br/>
+        <label for="password2">Repeat password:</label><br/>
+        <input type="password" id="password2" name="password2" /><br/>
+        <label for="email">Email address:</label><br/>
+        <input type="email" id="email" name="email" /><br/>
+        <label for="name">Name:</label><br/>
+        <input type="text" id="name" name="name" /><br/>
+        <input type="submit" value="Submit" class="newbutton">
+    </form>
+</div>
+
+</body>
+</html>
