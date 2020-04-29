@@ -357,6 +357,7 @@ var voterApp = new Vue({
             if (this.$data.allowedToVote) {
                 this.fetchCTFKeys();
                 this.checkForNewQuestions();
+                // TODO: seems to be a bug? Doesn't always show all new questions right away?
             }
         },
         dealWithError: function(error) {

@@ -8,8 +8,7 @@
     <script src="cookie.js"></script>
 </head>
 <body>
-<style>
-</style>
+<link rel="stylesheet" type="text/css" href="voting.css" >
 <div id="landingapp">
     Welcome, {{ username }} <p/>
     <div v-show="admin">
@@ -21,7 +20,7 @@
     <!-- TODO: make these editable and PATCH and save to db -->
     {{ name }} {{ email }}
 </div>
-<form action="logout"><input type="submit" value="Log Out"></form>
+<form action="logout"><input type="submit" value="Log Out" class="loginbutton" ></form>
 <script src="landing.js"></script>
 </body>
 </html>

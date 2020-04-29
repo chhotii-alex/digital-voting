@@ -11,47 +11,88 @@
     <script src="question.js"></script>
 </head>
 <body>
+<link rel="stylesheet" type="text/css" href="voting.css" >
 <div id="adminapp">
     Welcome, {{ name }} <br/>
     <div v-show="admin">
-        Here is the content that's visible if you're an admin
-        <button v-on:click="fetchUsers" >View User List</button>
-        <div v-for="user in allusers" >
-            {{ user.name }} {{ user.currentEmail }}
-            <button v-show="!user.allowedToVote" v-on:click="user.grantVoting()" >Grant Voting Privilege</button>
-            <button v-show="user.allowedToVote" v-on:click="user.revokeVoting()" >Revoke Voting Privilege</button>
-            <button v-show="!user.admin" v-on:click="user.grantAdmin()" >Grant Admin Privilege</button>
-            <button v-show="user.admin" v-on:click="user.revokeAdmin()" >Revoke Admin Privilege</button>
+        <button v-on:click="fetchUsers" class="bigbutton" >View/Update User List</button><br/>
+        <div class="row" v-show="allusers.length" >
+            <span class="col-3"> Name  </span>
+            <span class="col-3"> Email </span>
+            <span class="col-2">
+                Voting Privilege
+            </span>
+            <span class="col-2">
+                Admin Privilege
+            </span>
         </div>
-        <button v-on:click="fetchQuestions" >View All Questions</button>
+        <div v-for="user in allusers" >
+            <div class="row" >
+                <hr/>
+            </div>
+            <div class="row" >
+                <span class="col-3"> {{ user.name }}  </span>
+                <span class="col-3"> {{ user.currentEmail }} </span>
+                <span class="col-2">
+                    <span v-show="user.allowedToVote"><b><i>V</i></b></span>
+                    <button v-show="!user.allowedToVote" v-on:click="user.grantVoting()" class="borderless" >
+                        Grant Voting
+                    </button>
+                    <button v-show="user.allowedToVote" v-on:click="user.revokeVoting()" class="borderless" >
+                        Revoke Voting
+                    </button>
+                </span>
+                <span class="col-2">
+                    <span v-show="user.admin"><b><i>A</i></b></span>
+                    <button v-show="!user.admin" v-on:click="user.grantAdmin()" class="borderless" >
+                        Grant Admin
+                    </button>
+                    <button v-show="user.admin" v-on:click="user.revokeAdmin()" class="borderless" >
+                        Revoke Admin
+                    </button>
+                </span>
+            </div>
+        </div>
+        <button v-on:click="fetchQuestions" class="bigbutton" >View/Update Questions</button><br/>
         <div v-for="question in allquestions" class="boxed" >
-            Status: {{ question.status }} <p/>
-            <span v-show="!question.canBeEdited()" > {{ question.text }} </span>
+            Status: <em>{{ question.status }}</em> <p/>
+            <span v-show="!question.canBeEdited()" >
+                <h3>
+                    {{ question.text }}
+                </h3>
+            </span>
             <span v-show="question.canBeEdited()" >
                 <input v-model="question.text" size="80" />
             </span>
             <div v-for="option in question.possibleResponses" >
-                <span v-show="!question.canBeEdited()" >{{ option.text }}</span>
+                <span v-show="!question.canBeEdited()" >&bull; {{ option.text }}</span>
                 <span v-show="question.canBeEdited()" >
                     <input v-model="option.text" maxlength="80" />
-                    <button v-show="question.canDeleteOption()" v-on:click="deleteOption" :id="question.id+':'+option.text">
+                    <button  class="borderless"
+                            v-show="question.canDeleteOption()" v-on:click="deleteOption" :id="question.id+':'+option.text">
                         Delete
                     </button>
                 </span>
             </div>
-            <button v-show="question.canBeEdited()" v-on:click="question.addOption()">Add Option</button><br/>
-            <button :disabled="!question.canBeSaved()" v-show="question.canBeEdited()" v-on:click="question.saveMe()">Save</button>
-            <button :disabled="question.hasUnsavedChanges()" v-show="question.canBePosted()" v-on:click="question.postMe()">Start Polling</button>
-            <button v-show="question.canBeClosed()" v-on:click="question.closeMe()">End Polling</button>
+            <button  class="borderless"
+                     v-show="question.canBeEdited()" v-on:click="question.addOption()">Add Option</button><br/>
+            <button  class="bigbutton"
+                     :disabled="!question.canBeSaved()" v-show="question.canBeEdited()" v-on:click="question.saveMe()">Save</button>
+            <button  class="bigbutton"
+                     :disabled="question.hasUnsavedChanges()" v-show="question.canBePosted()" v-on:click="question.postMe()">Start Polling</button>
+            <button  class="bigbutton"
+                     v-show="question.canBeClosed()" v-on:click="question.closeMe()">End Polling</button>
+            <br/>
             <!-- TODO: timer tick to dynamically update display of results of questions in polling status -->
-            <div v-for="(count, opt) in question.results" >
-                <b>{{ opt }} :</b> <i> {{ count }} </i>
-            </div>
+            <b>Results:</b>
+            <span v-for="(count, opt) in question.results" >
+                <i>{{ opt }} :</i>  {{ count }}
+            </span>
         </div>
-        <button v-show="showingQuestions" v-on:click="newQuestion" >Create New Question</button>
+        <button  class="bigbutton" v-show="showingQuestions" v-on:click="newQuestion" >Create New Question</button>
     </div>
 </div>
-<form action="logout"><input type="submit" value="Log Out"></form>
+<form action="logout"  ><input type="submit" value="Log Out" class="loginbutton" ></form>
 <script src="admin.js"></script>
 </body>
 </html>

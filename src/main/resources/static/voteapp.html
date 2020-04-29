@@ -11,35 +11,14 @@
     <script src="question.js"></script>
 </head>
 <body>
-<style>
-    .boxed {
-        border: solid;
-        padding: 10px;
-    }
-    button.notselected {
-        border: none;
-        padding: 5px;
-        margin: 5px;
-        font-size: 16px;
-        border-radius: 0px;
-    }
-    button.selected {
-        border: none;
-        color: white;
-        background-color: MIDNIGHTBLUE;
-        padding: 5px;
-        margin: 5px;
-        font-size: 17px;
-        border-radius: 0px;
-    }
-</style>
+<link rel="stylesheet" type="text/css" href="voting.css" >
 <div id="voterapp">
     Hello, {{ username }} <p/>
     <div v-show="allowedToVote" >
         <div v-for="question in votableQuestions" class="boxed">
             Question {{ question.id }}.<br/>
             {{ question.text }}
-            <!-- TODO: spiffy up the css of all this
+            <!-- 
                 TODO: make buttons unfocusable when they are in effect disabled
                 TODO: 'verify all' button -->
             <div v-for="option in question.possibleResponses" >
@@ -48,17 +27,25 @@
                     {{ option.text }}
                 </button>
             </div>
-            <div v-if="question.canVote()"><button v-on:click="question.ballot.vote()">Submit Vote</button></div>
-            <div v-if="question.ballot.iVoted()"><button v-on:click="question.ballot.verifyVote()">Verify</button></div>
+            <div v-if="question.canVote()">
+                <button v-on:click="question.ballot.vote()" class="bigbutton">
+                Submit Vote
+                </button>
+            </div>
+            <div v-if="question.ballot.iVoted()">
+                <button v-on:click="question.ballot.verifyVote()" class="bigbutton">
+                    Verify
+                </button>
+            </div>
             <i>{{ question.ballot.verificationMessage }}</i>
             <div v-for="(count, opt) in question.ballot.results" >
                 <b>{{ opt }} :</b> <i> {{ count }} </i>
             </div>
         </div>
-        <button v-on:click="checkForNewQuestions" >Update Question List</button>
+        <button v-on:click="checkForNewQuestions" class="bigbutton" >Update Question List</button>
     </div>
 </div>
-<form action="logout"><input type="submit" value="Log Out"></form>
+<form action="logout"><input type="submit" value="Log Out" class="loginbutton" ></form>
 <script src="voting.js"></script>
 </body>
 </html>

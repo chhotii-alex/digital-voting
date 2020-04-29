@@ -1,0 +1,95 @@
+    body {
+        font-family: Verdana, Geneva, sans-serif;
+    }
+    input {
+        font-size: 16px;  // make input fields at least 16px on small screens to avoid annoying iPhone
+    }
+    .newbutton {
+        border: none;
+        color: white;
+        padding: 4px;
+        font-size: 16px;
+        background-color: #2196F3;
+        margin: 4px;
+    }
+    .newbutton:hover {
+        font-size: 17px;
+        background: #0b7dda;
+    }
+    .loginbutton {
+        border: none;
+        color: white;
+        padding: 4px;
+        font-size: 16px;
+        background-color: #4CAF50;
+        margin: 4px;
+    }
+    .loginbutton:hover {
+        font-size: 17px;
+        background: #46a049;
+    }
+
+
+    .boxed {
+        border: solid;
+        padding: 10px;
+        margin: 10px;
+    }
+    button.notselected {
+        border: none;
+        padding: 5px;
+        margin: 5px;
+        font-size: 16px;
+        border-radius: 0px;
+    }
+    button.selected {
+        border: none;
+        color: white;
+        background-color: MIDNIGHTBLUE;
+        padding: 5px;
+        margin: 5px;
+        font-size: 17px;
+        border-radius: 0px;
+    }
+    button.borderless {
+        border: none;
+    }
+    .bigbutton {
+      background-color: #e7e7e7;
+      border: none;
+      color: black;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+    }
+    .bigbutton:disabled {
+      background-color: #f4f4f4;
+        color: white;
+    }
+
+
+
+    /* Table-like layout (without tables) (can be made media reactive) */
+      .row::after {
+        content: "";
+        clear: both;
+        display: table;
+      }
+      [class*="col-"] {
+        float: left;
+        padding: 4px;
+      }
+        .col-1 {width: 10%;}
+        .col-2 {width: 18%;}
+        .col-3 {width: 28%;}
+        .col-4 {width: 40%;}
+        .col-5 {width: 50%;}
+        .col-6 {width: 60%;}
+        .col-7 {width: 70%;}
+        .col-8 {width: 80%;}
+        .col-9 {width: 90%;}
+        .col-10 {width: 100%;}

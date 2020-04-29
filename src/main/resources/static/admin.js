@@ -204,9 +204,9 @@ var adminApp = new Vue({
     el: '#adminapp',
     data: {
         visible: true,
-        username: null,
-        name: null,
-        email: null,
+        username: '',
+        name: '',
+        email: '',
         allowedToVote: false,
         admin: false,
         allquestions: [],
