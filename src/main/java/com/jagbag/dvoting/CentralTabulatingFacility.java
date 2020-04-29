@@ -243,8 +243,8 @@ public class CentralTabulatingFacility {
         List<Vote> list = query.getResultList();
         Vote v = null;
         if (list.size() > 0) {
-            em.close();
             v = list.get(0);
+            em.close();
             if (!v.getResponseChitNumber().equals(responseChitNumber) || !v.getResponse().equals(response)) {
                 // Voting twice on the same question (with different choices) is an error.
                 throw new Exception(String.format("Contradictory votes from %s on question %d. %s, %s", voterIDChit, quid, v.getResponse(), responseChit));
@@ -281,6 +281,7 @@ public class CentralTabulatingFacility {
         Query query= em.createQuery(hql);
         query.setParameter("q", q);
         List<Vote> list = query.getResultList();
+        em.close();
         return list;
     }
 }

@@ -60,135 +60,6 @@ Random = {
         return bigInt.randBetween(min, max, Math.random);
     },
 };
-class ResponseOption {
-    // TODO: enforce length limit of 80 characters on text
-    constructor(text) {
-        this.text = text;
-    };
-    getText() {
-        return this.text;
-    };
-    toString() {
-        return this.text;
-    };
-    getUniqueLabel() {
-        return `${ this.questionID } ${ this.getText() }`;
-    };
-}
-class Question {
-    constructor(text="") {
-        this.text = text;
-        this.possibleResponses = [];
-    };
-    addResponseOption(opt) {
-        opt.questionID = this.id;
-        this.possibleResponses.push(opt);
-    }
-    addResponseOptionsFrom(obj) {
-        var j;
-        for (j = 0; j < obj.possibleResponses.length; ++j) {
-             var ro = obj.possibleResponses[j];
-             var r = new ResponseOption(ro.text);
-             this.addResponseOption(r);
-         }
-    }
-}
-class AdministratableQuestion extends Question {
-    constructor(obj=null) {
-        super();
-        this.setOriginalData(obj);
-        this.results = {};
-    }
-    setOriginalData(obj) {
-        this.original = obj;
-        if (obj == null) {
-            this.status = 'new';
-        }
-        else {
-            this.id = obj.id;
-            this.text = obj.text;
-            this.status = obj.status;
-            this.addResponseOptionsFrom(obj);
-            if (this.status === 'polling' || this.status === 'closed' ) {
-                this.reportVotes();
-            }
-        }
-    }
-    reportVotes() {
-        let url = "ballot/" + this.id + "/verify";
-        let promise = axios.get(url);
-        promise.then( response => this.processVerificationData(response) )
-            .catch( error => console.log(error) );
-    }
-    processVerificationData(response) {
-        var report = response.data;
-        this.results = {};
-        var i;
-        this.possibleResponses.forEach( (option, i) => {
-            this.results[option.getText()] = 0;
-        });
-        for (i = 0; i < report.length; ++i) {
-	        var record = report[i];
-		    var questionID = record.question.id;
-            if (questionID != this.id) { continue; }
-            if (this.results[record.response]) {
-                this.results[record.response] += 1;
-            }
-            else {   // Covers the case that a response was not in the question's list of possible responses...
-                this.results[record.response] = 1;  // which shouldn't happen, as things work now, but just in case...
-            }
-        }
-    }
-    canBeEdited() {
-        return (this.original == null || this.original.editable);
-    }
-    canBeSaved() {
-        if (this.canBeEdited() && this.text.length > 0 && this.possibleResponses.length > 1) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    saveMe() {
-        var promise;
-        if (this.original) {
-            let url = "questions/" + this.original.id;
-            promise = axios.patch(url, this);
-        }
-        else {
-            let url = "questions";
-            promise = axios.post(url, this);
-        }
-        promise.then(function (response) {
-            voterApp.fetchQuestions();
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
-    }
-    canBePosted() {
-        if (this.original == null) {
-            return false;
-        }
-        return this.original.postable;
-    }
-    postMe() {
-        if (!this.canBePosted()) { return; }
-        let prompt = "Are you sure you want to start polling on this question now: " + this.text;
-        let response = confirm(prompt);
-        if (response) {
-            let url = "questions/" + this.original.id + "/post";
-            let promise = axios.patch(url, this);
-            promise.then(function (response) {
-                voterApp.fetchQuestions();
-            })
-            .catch(function (error) {
-                console.log(error);
-            });
-        }
-    }
-}
 class VotableQuestion extends Question {
     constructor(obj) {
         super();
@@ -203,45 +74,6 @@ class VotableQuestion extends Question {
     canVote() {
         return (!this.closed && this.ballot.currentlySelectedResponse
                 && (!this.ballot.submittedResponse || !this.ballot.voteAcknowledged));
-    }
-}
-class Voter {
-    constructor(obj) {
-        this.currentEmail = obj.currentEmail;
-        this.name = obj.name;
-        this.username = obj.username;
-        this.allowedToVote = obj.allowedToVote;
-        this.admin = obj.admin;
-    };
-    grantVoting() {
-        this.allowedToVote = true;
-        this.savePrivChanges();
-    }
-    revokeVoting() {
-        this.allowedToVote = false;
-        this.savePrivChanges();
-    }
-    grantAdmin() {
-        this.admin = true;
-        this.savePrivChanges();
-    }
-    revokeAdmin() {
-        let prompt = "Are you sure you want to revoke admin privileges from " + this.name + "?";
-        let response = confirm(prompt);
-        if (response) {
-            this.admin = false;
-            this.savePrivChanges();
-        }
-    }
-    savePrivChanges() {
-        let url = "voters/" + this.username + "/priv";
-        let promise = axios.patch(url, this);
-        promise.then(function (response) {
-            voterApp.fetchUsers();
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
     }
 }
 /*  TODO: How do we keep votes confidential between people sharing a computer?
@@ -498,21 +330,6 @@ class Ballot {
 	    }
     };
 };
-function getCookieValue(key) {
-    key = key + '=';
-    var cookieArray = document.cookie.split(';');
-    for (var i = 0; i < cookieArray.length; i++) {
-    	var c = cookieArray[i];
-	    while (c.charAt(0) == ' ') c = c.substring(1);
-	    if (c.indexOf(key) == 0) {
-            return c.substring(key.length, c.length);
-	    }
-    }
-    return "";
-}
-function getUser() {
-    return getCookieValue("user");
-}
 var voterApp = new Vue({
     el: '#voterapp',
     data: {
@@ -522,9 +339,6 @@ var voterApp = new Vue({
         email: null,
         allowedToVote: false,
         admin: false,
-        allquestions: [],
-        showingQuestions: false,
-        allusers: [],
         errorText: '',
         votableQuestions: [],
     },
@@ -545,17 +359,6 @@ var voterApp = new Vue({
                 this.checkForNewQuestions();
             }
         },
-        processQuestionList: function(response) {
-            console.log(response.data);
-            this.$data.showingQuestions = true;
-            var i;
-            this.$data.allquestions = [];
-            for (i = 0; i < response.data.length; ++i) {
-                var obj = response.data[i];
-                var q = new AdministratableQuestion(obj);
-                this.$data.allquestions.push(q);
-            }
-        },
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;
         },
@@ -563,28 +366,6 @@ var voterApp = new Vue({
             let url = "questions/";
             let aPromise = axios.get(url);
             aPromise.then(response => this.processQuestionList(response), error => this.dealWithError(error));
-        },
-        newQuestion: function() {
-            let item = new AdministratableQuestion();
-            item.addResponseOption(new ResponseOption("yes"));
-            item.addResponseOption(new ResponseOption("no"));
-            item.addResponseOption(new ResponseOption("abstain"));
-            this.$data.allquestions.push(item);
-        },
-        fetchUsers: function() {
-            let url = "voters/";
-            let promise = axios.get(url);
-            promise.then(response => this.processUserList(response), error => this.dealWithError(error));
-        },
-        processUserList: function(response) {
-            console.log(response.data);
-            this.$data.allusers = [];
-            var i;
-            for (i = 0; i < response.data.length; ++i) {
-                var obj = response.data[i];
-                v = new Voter(obj);
-                this.$data.allusers.push(v);
-            }
         },
         fetchCTFKeys: function() {
             let url = "ballots/keys/";
@@ -631,54 +412,3 @@ var voterApp = new Vue({
     },
 });
 
-
-// Below: A small snippet from the Google closure-libary file crypt.js
-//   Modified: namespace changed 4/26/2020
-// See https://github.com/google/closure-library for complete library
-// Copyright notice for the stringToUtf8ByteArray function:
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * Converts a JS string to a UTF-8 "byte" array.
- * @param {string} str 16-bit unicode string.
- * @return {!Array<number>} UTF-8 byte array.
- */
-stringToUtf8ByteArray = function(str) {
-    // TODO(user): Use native implementations if/when available
-    var out = [], p = 0;
-    for (var i = 0; i < str.length; i++) {
-	var c = str.charCodeAt(i);
-	if (c < 128) {
-	    out[p++] = c;
-	} else if (c < 2048) {
-	    out[p++] = (c >> 6) | 192;
-	    out[p++] = (c & 63) | 128;
-	} else if (
-		   ((c & 0xFC00) == 0xD800) && (i + 1) < str.length &&
-		   ((str.charCodeAt(i + 1) & 0xFC00) == 0xDC00)) {
-	    // Surrogate Pair
-	    c = 0x10000 + ((c & 0x03FF) << 10) + (str.charCodeAt(++i) & 0x03FF);
-	    out[p++] = (c >> 18) | 240;
-	    out[p++] = ((c >> 12) & 63) | 128;
-	    out[p++] = ((c >> 6) & 63) | 128;
-	    out[p++] = (c & 63) | 128;
-	} else {
-	    out[p++] = (c >> 12) | 224;
-	    out[p++] = ((c >> 6) & 63) | 128;
-	    out[p++] = (c & 63) | 128;
-	}
-    }
-    return out;
-};

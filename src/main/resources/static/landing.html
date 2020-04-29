@@ -5,91 +5,23 @@
     <title>Welcome to the Digital Voting Platform</title>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
+    <script src="cookie.js"></script>
 </head>
 <body>
 <style>
-    .boxed {
-        border: solid;
-        padding: 10px;
-    }
-    button.notselected {
-        border: none;
-        padding: 5px;
-        margin: 5px;
-        font-size: 16px;
-        border-radius: 0px;
-    }
-    button.selected {
-        border: none;
-        color: white;
-        background-color: MIDNIGHTBLUE;
-        padding: 5px;
-        margin: 5px;
-        font-size: 17px;
-        border-radius: 0px;
-    }
 </style>
-<div id="voterapp">
-    Hello, {{ username }} <p/>
-    <div v-show="allowedToVote" >
-        <div v-for="question in votableQuestions" class="boxed">
-            Question {{ question.id }}.<br/>
-            {{ question.text }}
-            <!-- TODO: stiffy up the css of all this
-                TODO: make buttons unfocusable when they are in effect disabled
-                TODO: 'verify all' button -->
-            <div v-for="option in question.possibleResponses" >
-                <button v-on:click="question.ballot.setCurrentlySelectedResponse(option.text)"
-                    :class="question.ballot.classForOption(option.text)">
-                    {{ option.text }}
-                </button>
-            </div>
-            <div v-if="question.canVote()"><button v-on:click="question.ballot.vote()">Submit Vote</button></div>
-            <div v-if="question.ballot.iVoted()"><button v-on:click="question.ballot.verifyVote()">Verify</button></div>
-            <i>{{ question.ballot.verificationMessage }}</i>
-            <div v-for="(count, opt) in question.ballot.results" >
-                <b>{{ opt }} :</b> <i> {{ count }} </i>
-            </div>
-        </div>
-        <button v-on:click="checkForNewQuestions" >Update Question List</button>
-    </div>
+<div id="landingapp">
+    Welcome, {{ username }} <p/>
     <div v-show="admin">
-        Here is the content that's visible if you're an admin
-        <button v-on:click="fetchUsers" >View User List</button>
-        <div v-for="user in allusers" >
-            {{ user.name }} {{ user.currentEmail }}
-            <button v-show="!user.allowedToVote" v-on:click="user.grantVoting()" >Grant Voting Privilege</button>
-            <button v-show="user.allowedToVote" v-on:click="user.revokeVoting()" >Revoke Voting Privilege</button>
-            <button v-show="!user.admin" v-on:click="user.grantAdmin()" >Grant Admin Privilege</button>
-            <button v-show="user.admin" v-on:click="user.revokeAdmin()" >Revoke Admin Privilege</button>
-        </div>
-        <button v-on:click="fetchQuestions" >View All Questions</button>
-        <div v-for="question in allquestions" class="boxed" >
-            Status: {{ question.status }} <p/>
-            <span v-show="!question.canBeEdited()" > {{ question.text }} </span>
-            <span v-show="question.canBeEdited()" >
-                <input v-model="question.text" size="80" />
-            </span>
-            <div v-for="option in question.possibleResponses" >
-                <span v-show="!question.canBeEdited()" >{{ option.text }}</span>
-                <span v-show="question.canBeEdited()" >
-                    <input v-model="option.text" maxlength="80" />
-                </span>
-            </div>
-            <button v-show="question.canBeSaved()" v-on:click="question.saveMe()">Save</button>
-            <button v-show="question.canBePosted()" v-on:click="question.postMe()">Post</button>
-            <!-- TODO: timer tick to dynamically update display of results of questions in polling status -->
-            <div v-for="(count, opt) in question.results" >
-                <b>{{ opt }} :</b> <i> {{ count }} </i>
-            </div>
-        </div>
-        <button v-show="showingQuestions" v-on:click="newQuestion" >Create New Question</button>
+        <a href="admin.html"> Open the Administration Page</a>
+    </div>
+    <div v-show="allowedToVote" >
+        <a href="voteapp.html" >Open the Voting Page</a>
     </div>
     <!-- TODO: make these editable and PATCH and save to db -->
     {{ name }} {{ email }}
 </div>
 <form action="logout"><input type="submit" value="Log Out"></form>
-<script src="voting.js"></script>
+<script src="landing.js"></script>
 </body>
 </html>

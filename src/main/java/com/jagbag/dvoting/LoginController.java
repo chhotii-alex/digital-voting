@@ -61,7 +61,12 @@ public class LoginController extends APIController {
         return ResponseEntity.ok().body(textFromResource(landingPage));
     }
 
-    @PostMapping("/loginscript")
+    @GetMapping("/landing")
+    public ResponseEntity getLanding(@RequestHeader HttpHeaders headers) throws Exception {
+        return landing(headers);
+    }
+
+    @PostMapping("/landing")
     public ResponseEntity pleaseLogin(@RequestBody String formData) throws Exception {
         Map<String, String> formValue = parseForm(formData);
         String username = formValue.get("user");
@@ -77,7 +82,6 @@ public class LoginController extends APIController {
                 String.format("token=%s; HttpOnly; SameSite=Lax", loginManager.tokenForUser(username)));
         responseHeaders.add("Set-Cookie",
                 String.format("user=%s; SameSite=Lax", username));
-        /* TODO: the problem with doing it this way is that the URL in the URL bar is loginscript which can't be refreshed. Re-direct would be better. */
         return ResponseEntity.ok().headers(responseHeaders).body(textFromResource(landingPage));
     }
 
@@ -160,7 +164,11 @@ public class LoginController extends APIController {
 
     @GetMapping("/logout")
     public ResponseEntity doLogout(@RequestHeader HttpHeaders headers) throws IOException {
-        Voter v = loginManager.validateBasicUser(headers);
+        Voter v = null;
+        try {
+            v = loginManager.validateBasicUser(headers);
+        }
+        catch (Exception ex) {}
         if (v != null) {
             loginManager.forgetTokenForUser(v);
         }

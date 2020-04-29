@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to the Digital Voting Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
+    <script src="googclosure.js"></script>
+    <script src="cookie.js"></script>
+    <script src="question.js"></script>
+</head>
+<body>
+<style>
+    .boxed {
+        border: solid;
+        padding: 10px;
+    }
+    button.notselected {
+        border: none;
+        padding: 5px;
+        margin: 5px;
+        font-size: 16px;
+        border-radius: 0px;
+    }
+    button.selected {
+        border: none;
+        color: white;
+        background-color: MIDNIGHTBLUE;
+        padding: 5px;
+        margin: 5px;
+        font-size: 17px;
+        border-radius: 0px;
+    }
+</style>
+<div id="voterapp">
+    Hello, {{ username }} <p/>
+    <div v-show="allowedToVote" >
+        <div v-for="question in votableQuestions" class="boxed">
+            Question {{ question.id }}.<br/>
+            {{ question.text }}
+            <!-- TODO: spiffy up the css of all this
+                TODO: make buttons unfocusable when they are in effect disabled
+                TODO: 'verify all' button -->
+            <div v-for="option in question.possibleResponses" >
+                <button v-on:click="question.ballot.setCurrentlySelectedResponse(option.text)"
+                        :class="question.ballot.classForOption(option.text)">
+                    {{ option.text }}
+                </button>
+            </div>
+            <div v-if="question.canVote()"><button v-on:click="question.ballot.vote()">Submit Vote</button></div>
+            <div v-if="question.ballot.iVoted()"><button v-on:click="question.ballot.verifyVote()">Verify</button></div>
+            <i>{{ question.ballot.verificationMessage }}</i>
+            <div v-for="(count, opt) in question.ballot.results" >
+                <b>{{ opt }} :</b> <i> {{ count }} </i>
+            </div>
+        </div>
+        <button v-on:click="checkForNewQuestions" >Update Question List</button>
+    </div>
+</div>
+<form action="logout"><input type="submit" value="Log Out"></form>
+<script src="voting.js"></script>
+</body>
+</html>

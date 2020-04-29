@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to the Digital Voting administration page!</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
+    <script src="googclosure.js"></script>
+    <script src="cookie.js"></script>
+    <script src="question.js"></script>
+</head>
+<body>
+<div id="adminapp">
+    Welcome, {{ name }} <br/>
+    <div v-show="admin">
+        Here is the content that's visible if you're an admin
+        <button v-on:click="fetchUsers" >View User List</button>
+        <div v-for="user in allusers" >
+            {{ user.name }} {{ user.currentEmail }}
+            <button v-show="!user.allowedToVote" v-on:click="user.grantVoting()" >Grant Voting Privilege</button>
+            <button v-show="user.allowedToVote" v-on:click="user.revokeVoting()" >Revoke Voting Privilege</button>
+            <button v-show="!user.admin" v-on:click="user.grantAdmin()" >Grant Admin Privilege</button>
+            <button v-show="user.admin" v-on:click="user.revokeAdmin()" >Revoke Admin Privilege</button>
+        </div>
+        <button v-on:click="fetchQuestions" >View All Questions</button>
+        <div v-for="question in allquestions" class="boxed" >
+            Status: {{ question.status }} <p/>
+            <span v-show="!question.canBeEdited()" > {{ question.text }} </span>
+            <span v-show="question.canBeEdited()" >
+                <input v-model="question.text" size="80" />
+            </span>
+            <div v-for="option in question.possibleResponses" >
+                <span v-show="!question.canBeEdited()" >{{ option.text }}</span>
+                <span v-show="question.canBeEdited()" >
+                    <input v-model="option.text" maxlength="80" />
+                    <button v-show="question.canDeleteOption()" v-on:click="deleteOption" :id="question.id+':'+option.text">
+                        Delete
+                    </button>
+                </span>
+            </div>
+            <button v-show="question.canBeEdited()" v-on:click="question.addOption()">Add Option</button><br/>
+            <button :disabled="!question.canBeSaved()" v-show="question.canBeEdited()" v-on:click="question.saveMe()">Save</button>
+            <button :disabled="question.hasUnsavedChanges()" v-show="question.canBePosted()" v-on:click="question.postMe()">Start Polling</button>
+            <button v-show="question.canBeClosed()" v-on:click="question.closeMe()">End Polling</button>
+            <!-- TODO: timer tick to dynamically update display of results of questions in polling status -->
+            <div v-for="(count, opt) in question.results" >
+                <b>{{ opt }} :</b> <i> {{ count }} </i>
+            </div>
+        </div>
+        <button v-show="showingQuestions" v-on:click="newQuestion" >Create New Question</button>
+    </div>
+</div>
+<form action="logout"><input type="submit" value="Log Out"></form>
+<script src="admin.js"></script>
+</body>
+</html>
