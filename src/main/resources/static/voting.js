@@ -39,7 +39,8 @@ function getStorageData(key) {
 /* Equivalent to the Java code: new BigInteger(s.getBytes(UTF_8))   */
 function stringToBigInteger(s) {
         var b = stringToUtf8ByteArray(s);
-        bi = bigInt();
+        var bi = bigInt();
+        var i;
         for (i = 0; i < b.length; ++i) {
             bi = bi.shiftLeft(8);
             bi = bi.add(b[i]);
@@ -97,7 +98,6 @@ class Chit {
         return `${ this.questionID } ${ this.number } ${ this.getText() }`;
     };
     getM() {   // message as a BigInteger
-        var i;
         var m = stringToBigInteger(this.getMessageText());
         return m;
     };

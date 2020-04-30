@@ -30,10 +30,10 @@ function checkNewPasswords(e) {
 <div id="landingapp">
     Welcome, {{ username }} <p/>
     <div v-show="admin">
-        <a href="admin.html"> Open the Administration Page</a>
+        <a href="admin.html" target="_blank"  Open the Administration Page</a>
     </div>
     <div v-show="allowedToVote" >
-        <a href="voteapp.html" >Open the Voting Page</a>
+        <a href="voteapp.html" target="_blank" >Open the Voting Page</a>
     </div>
     <!-- TODO: make these editable and PATCH and save to db -->
     {{ name }}

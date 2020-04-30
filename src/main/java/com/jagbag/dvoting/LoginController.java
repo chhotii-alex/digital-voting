@@ -56,7 +56,6 @@ public class LoginController extends APIController {
     // TODO: we badly need reset password functionality
     @GetMapping("/login")
     public ResponseEntity getLoginPage() throws Exception {
-        voterListManager.initialize();
         return ResponseEntity.ok().body(textFromResource(loginPage));
     }
 
@@ -127,7 +126,6 @@ public class LoginController extends APIController {
 
     @GetMapping("/")
     public ResponseEntity landing(@RequestHeader HttpHeaders headers) throws Exception {
-        voterListManager.initialize();
         Voter v;
         try {
             v = loginManager.validateBasicUser(headers);
