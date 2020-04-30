@@ -26,7 +26,7 @@ public class LoginManager {
         if (v == null) {
             return false;
         }
-        if (!v.isEmailConfirmed()) {
+        if (!v.isActiveAccount()) {
             throw new UnauthorizedException();
         }
         try {
@@ -92,7 +92,7 @@ public class LoginManager {
         if (v == null) {
             return null;
         }
-        if (!v.isEmailConfirmed()) {
+        if (!v.isActiveAccount()) {
             throw new UnauthorizedException();
         }
         return v;

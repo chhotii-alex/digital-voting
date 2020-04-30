@@ -16,6 +16,10 @@
         font-size: 17px;
         background: #0b7dda;
     }
+    .newbutton:disabled {
+        font-size: 16px;
+      background-color: #cfe9ff;
+    }
     .loginbutton {
         border: none;
         color: white;
@@ -28,7 +32,10 @@
         font-size: 17px;
         background: #46a049;
     }
-
+    .loginbutton:disabled {
+        font-size: 16px;
+      background-color: #bfffc1;
+    }
 
     .boxed {
         border: solid;

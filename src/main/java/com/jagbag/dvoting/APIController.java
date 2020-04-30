@@ -32,6 +32,8 @@ public class APIController {
     /** Our connection to the magical Hibernate Java Persistence API implementation. */
     @Autowired
     protected EntityManagerFactory emf;
+    /** Connection to the email sending system */
+    @Autowired protected EmailSender emailSender;
 
     /**
      * Find a file in the classpath and return its text contents.

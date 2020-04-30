@@ -1,6 +1,8 @@
 package com.jagbag.dvoting;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,17 +68,49 @@ public class UserAdminController extends APIController {
      */
     @PatchMapping("/voters/{username}")
     public synchronized ResponseEntity patchVoterInfo(@RequestHeader HttpHeaders headers, @RequestBody Voter patchVoter, @PathVariable String username) {
-        loginManager.validateCanAdministerUser(headers, username);
-        Voter v = voterListManager.getForUsername(username);
-        if (v == null) {
-            throw new ItemNotFoundException();
+        Voter v = loginManager.validateCanAdministerUser(headers, username);
+        if (!v.getUsername().equals(username)) {
+            // only allow these operations if the logged-in user matches the user we want to update
+            throw new ForbiddenException();
         }
         v.setName(patchVoter.getName());
-        if (!v.getEmail().equals(patchVoter.getEmail())) {
+        if (!v.getCurrentEmail().equals(patchVoter.getEmail())) {
             // TODO: email updating protocol
+            v.submitEmailChange(patchVoter.getEmail());
+            sendConfirmationEmail(v);
         }
-        // TODO: merge changes
-        return new ResponseEntity(v, HttpStatus.OK);
+        if (voterListManager.updateVoter(v)) {
+            return new ResponseEntity(v, HttpStatus.OK);
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to save changes");
+        }
+    }
+
+    /** Text template for the body of the email to be sent asking users to confirm their email address. */
+    @Value("classpath:static/newemail.html")
+    protected Resource confirmEmailTemplate;
+    /** Text template for the body of the email to be sent asking users to notify email chnage. */
+    @Value("classpath:static/newemailnotice.html")
+    protected Resource changeEmailNoticeTemplate;
+
+    private boolean sendConfirmationEmail(Voter v) {
+        try {
+            String text = v.processEmailText(textFromResource(confirmEmailTemplate));
+            // TODO: how do we get the actual URL we're running at?
+            text = text.replaceAll("##BASEURL##", "http://localhost:8080");
+            emailSender.sendEmail(v.getEmail(), "please confirm your new email", text);
+
+            text = v.processEmailText(textFromResource(changeEmailNoticeTemplate));
+            emailSender.sendEmail(v.getOldEmail(), "your new email address on your account was changed", text);
+
+            return true;
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            // TODO: how to log errors here correctly?
+            return false;
+        }
     }
 
     /* TODO: if it's an administrator, not the user themself, don't allow deleting a voting-priv user */

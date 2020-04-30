@@ -3,7 +3,6 @@ package com.jagbag.dvoting;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import org.hibernate.annotations.NaturalId;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -51,6 +50,11 @@ public class Voter {
     private String passwordHash;
     private boolean emailConfirmed;
     private String confirmationCode;
+    @Transient
+    private String newRandomPassword;
+    private String resetPasswordSalt;
+    private String resetPasswordHash;
+    private String resetConfirmationCode;
 
     protected Voter() {} // Hibernate needs this
 
@@ -79,6 +83,38 @@ public class Voter {
     private String getConfirmationCode() { return this.confirmationCode; }
     public boolean isEmailConfirmed() { return emailConfirmed; }
 
+    /**
+     * Come up with a new ugly random password that a user can use if they can't remember their password.
+     * When a user requests that their password be reset, we come up with a random password for them. This is not
+     * yet their new password; the old password is expected until and and unless they click on the reset link that
+     * they will be sent in email. (Of course, we don't save the password in cleartext in the database, not ever,
+     * but rather create a new salt that is saved and save the hashed salted password.)
+     * In the course of this session, the user will be sent an email that includes their new password-- it's a
+     * transient field, so we have the actual new password in memory for the moment-- and a confirmation code.
+     * @see Voter#confirmPasswordReset for what happens if/when they click on the link to finalize the password
+     * reset.
+     * @throws UnsupportedEncodingException
+     * @throws NoSuchAlgorithmException
+     */
+    public void prepareForReset() throws UnsupportedEncodingException, NoSuchAlgorithmException {
+        newRandomPassword = (new BigInteger(48, ThreadLocalRandom.current())).toString(36);
+        resetPasswordSalt = (new BigInteger(48, ThreadLocalRandom.current())).toString(36);
+        resetPasswordHash = hashWithSalt(newRandomPassword, resetPasswordSalt);
+        resetConfirmationCode = (new BigInteger(48, ThreadLocalRandom.current())).toString(36);
+    }
+
+    /**
+     * Switch over to the randomly-generated new password because the user, apparently, forgot their old one.
+     * @param code - confirmation code that the user was sent in their email.
+     * This method MUST be called from an object that can persist this change to the database.
+     */
+    public void confirmPasswordReset(String code) {
+        if (code.equals(resetConfirmationCode)) {
+            passwordHash = resetPasswordHash;
+            passwordSalt = resetPasswordSalt;
+        }
+    }
+
     public void setPassword(String password) throws UnsupportedEncodingException, NoSuchAlgorithmException {
         passwordSalt = (new BigInteger(48, ThreadLocalRandom.current())).toString(36);
         passwordHash = hashWithSalt(password, passwordSalt);
@@ -94,6 +130,15 @@ public class Voter {
     public boolean checkPassword(String password) throws UnsupportedEncodingException, NoSuchAlgorithmException {
         String hashStr = hashWithSalt(password, passwordSalt);
         return (hashStr.equals(passwordHash));
+    }
+
+    public void submitEmailChange(String newEmail) {
+        if (!newEmail.equals(email)) {
+            prepareForConfirmationEmail();
+            oldEmail = getEmail();
+            email = newEmail;
+            emailConfirmed = false;
+        }
     }
 
     public void prepareForConfirmationEmail() {
@@ -114,10 +159,22 @@ public class Voter {
         emailConfirmed = flag;
     }
 
-    public String processConfirmationEmailText(String text) {
+    /**
+     * Fills in variables in email templates.
+     * Used for both the new account confirmation email and the reset password email, so deals with a superset
+     * of the variables involved in those processes.
+     * Note that some variables are handled by LoginController instead of here.
+     * @param text
+     * @return
+     */
+    public String processEmailText(String text) {
         text = text.replaceAll("##USERNAME##", getUsername());
+        text = text.replaceAll("##EMAIL##", getEmail());
+        text = text.replaceAll("##OLDEMAIL##", getOldEmail());
         text = text.replaceAll("##NAME##", getName());
         text = text.replaceAll("##CODE##", getConfirmationCode());
+        text = text.replaceAll("##RESET##", resetConfirmationCode);
+        text = text.replaceAll("##PASS##", newRandomPassword);
         return text;
     }
 

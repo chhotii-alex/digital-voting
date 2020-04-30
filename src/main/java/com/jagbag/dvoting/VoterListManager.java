@@ -149,4 +149,99 @@ public class VoterListManager {
             return false;
         }
     }
+
+    public Voter getForEmail(String email) {
+        // TODO: query for a Voter with this email address, and email confirmed, or this is the old email address
+        return null;
+    }
+
+    /**
+     * Handle a request that a password get reset.
+     * @see Voter#prepareForReset() for how the request is handled, which involves valuing some persistent fields.
+     * We handle persisting the changes to the database in this method.
+     * @param v -- user with an account needing a password reset
+     * @return whether or not we were able to update the database with the info about the new password
+     */
+    public boolean prepareForReset(Voter v) {
+        boolean success = true;
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
+        try {
+            v.prepareForReset();
+            em.merge(v);
+            em.getTransaction().commit();
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            em.getTransaction().rollback();
+            success = false;
+        }
+        finally {
+            em.close();
+        }
+        return success;
+    }
+
+    /**
+     * Ask that a Voter object switch over to the random new password, and persist the change.
+     * @param v
+     */
+    public boolean resetPassword(Voter v, String code) {
+        boolean success = true;
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
+        try {
+            v.confirmPasswordReset(code);
+            em.merge(v);
+            em.getTransaction().commit();
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            em.getTransaction().rollback();
+            success = false;
+        }
+        finally {
+            em.close();
+        }
+        return success;
+    }
+
+    public boolean setPassword(Voter v, String newPassword) {
+        boolean success = true;
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
+        try {
+            v.setPassword(newPassword);
+            em.merge(v);
+            em.getTransaction().commit();
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            em.getTransaction().rollback();
+            success = false;
+        }
+        finally {
+            em.close();
+        }
+        return success;
+    }
+
+    public boolean updateVoter(Voter v) {
+        boolean success = true;
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
+        try {
+            em.merge(v);
+            em.getTransaction().commit();
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            em.getTransaction().rollback();
+            success = false;
+        }
+        finally {
+            em.close();
+        }
+        return success;
+    }
 }

@@ -6,9 +6,27 @@
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="cookie.js"></script>
+    <script src="util.js"></script>
 </head>
 <body>
 <link rel="stylesheet" type="text/css" href="voting.css" >
+<script>
+function showChangePassword() {
+        elm = document.getElementById("changepassword");
+        elm.hidden = null;
+}
+
+function checkNewPasswords(e) {
+    var enableSubmit = true;
+    if (document.getElementById("password1").value.length < 8) {
+        enableSubmit = false;
+    }
+    if (document.getElementById("password1").value != document.getElementById("password2").value) {
+        enableSubmit = false;
+    }
+    document.getElementById("submitNewPassword").disabled = !enableSubmit;
+}
+</script>
 <div id="landingapp">
     Welcome, {{ username }} <p/>
     <div v-show="admin">
@@ -18,9 +36,47 @@
         <a href="voteapp.html" >Open the Voting Page</a>
     </div>
     <!-- TODO: make these editable and PATCH and save to db -->
-    {{ name }} {{ email }}
+    {{ name }}
+    {{ email }}  <!-- TODO: display the EFFECTIVE email address here (which may be oldEMail if not confirmed) -->
+    <div v-show="!isShowingEdit" >
+        <button class="loginbutton" v-on:click="isShowingEdit=true" >Edit Name and Email</button>
+    </div>
+    <div v-show="isShowingEdit" >
+
+        Enter new name: <input v-model="newName" /><br/>
+        <!-- TODO: newEmail should still be value in EMAIL column, even when showing effective email above -->
+        Enter new email address: <input v-model="newEmail" /><br/>
+        <i>Note: any new email address will not be in effect until confirmed.</i>
+        <button class="loginbutton" :disabled="!canSaveEdits" v-on:click="saveEdits">Save Changes</button>
+    </div>
+    <i>{{ newEmailNote }}</i>
+    <button class="loginbutton" v-on:click="getUserInfo">Refresh</button>
 </div>
+
+<button onclick="showChangePassword()" class="loginbutton">Change My Password</button>
+<div id="changepassword" hidden="hidden" >
+    <form method="POST" action="changepassword"  >
+        <label for="password_old">Old Password:</label><br/>
+        <input type="password" id="password_old" name="password" /><br/>
+
+        <label for="password1">Password:</label><br/>
+        <input type="password" id="password1" name="password1" /><br/>
+
+        <label for="password2">Repeat password:</label><br/>
+        <input type="password" id="password2" name="password2" /><br/>
+
+        <input type="submit" id="submitNewPassword" value="Submit" class="newbutton" disabled="disabled">
+    </form>
+</div>
+
 <form action="logout"><input type="submit" value="Log Out" class="loginbutton" ></form>
 <script src="landing.js"></script>
+<script >
+var input;
+input = document.getElementById("password1");
+input.addEventListener('input', checkNewPasswords);
+input = document.getElementById("password2");
+input.addEventListener('input', checkNewPasswords);
+</script>
 </body>
 </html>

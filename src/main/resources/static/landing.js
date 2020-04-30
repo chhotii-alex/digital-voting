@@ -6,19 +6,55 @@ var landingApp = new Vue({
         email: null,
         allowedToVote: false,
         admin: false,
+        isShowingEdit: false,
+        newName: '',
+        newEmail: '',
+        newEmailNote: '',
     },
     mounted() {
         this.$data.username = getUser();
-        let url = "voters/" + this.$data.username;
-        let aPromise = axios.get(url);
-        aPromise.then(response => this.processUserInfo(response), error => this.dealWithError(error));
+        this.getUserInfo();
     },
     methods: {
+        getUserInfo: function() {
+            let url = "voters/" + this.$data.username;
+            let aPromise = axios.get(url);
+            aPromise.then(response => this.processUserInfo(response), error => this.dealWithError(error));
+        },
         processUserInfo: function(response) {
-            this.$data.name= response.data.name;
-            this.$data.email = response.data.email;
+            this.$data.name = response.data.name;
+            this.$data.email = response.data.currentEmail;  // may be oldEmail if new email not confirmed
             this.$data.allowedToVote = response.data.allowedToVote;
             this.$data.admin = response.data.admin;
+            this.$data.newName = this.$data.name;
+            this.$data.newEmail = response.data.email;  // email most recently entered will be in the email field
+            this.$data.newEmailNote = '';
         },
+        saveEdits: function() {
+            let url = "voters/" + this.$data.username;
+            let editedVoter = { name:this.$data.newName, email:this.$data.newEmail  };
+            let promise = axios.patch(url, editedVoter);
+            promise.then( response => this.processUpdateResponse(response) )
+            .catch(function (error) {
+                console.log(error);
+            });
+        },
+        processUpdateResponse: function(response) {
+            this.$data.name = this.$data.newName;
+            this.$data.isShowingEdit = false;
+            this.$data.newEmailNote = 'Please chack your email for a confirmation message.';
+        }
+    },
+    computed: {
+        canSaveEdits: function() {
+            var dataIsValid = true;
+            var dataHasChanged = false;
+            if (this.$data.newName.length < 1) { dataIsValid = false; }
+            if (this.$data.newEmail.length < 1) { dataIsValid = false; }
+            if (this.$data.newName != this.$data.name) { dataHasChanged = true; }
+            if (this.$data.newEmail != this.$data.email) { dataHasChanged = true; }
+            if (!isEmailValid(this.$data.newEmail)) { dataIsValid = false; }
+            return (dataHasChanged && dataIsValid);
+        }
     },
 });

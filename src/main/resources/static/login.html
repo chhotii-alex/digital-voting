@@ -6,6 +6,7 @@
 </head>
 <body>
 <link rel="stylesheet" type="text/css" href="voting.css" >
+<script src="util.js"></script>
 <script>
     function showNewUser() {
         elm = document.getElementById("newuser");
@@ -40,6 +41,9 @@
         <input type="submit" value="Submit" class="loginbutton" >
     </form>
     <hr/>
+    <form action="forgot" >
+        <input type="submit" value="Forgot Password" class="newbutton">
+    </form>
     <button onclick="showNewUser()" class="newbutton">Create a New Account</button>
 </div>
 <div id="newuser" hidden="hidden" >
@@ -57,9 +61,39 @@
         <input type="email" id="email" name="email" /><br/>
         <label for="name">Name:</label><br/>
         <input type="text" id="name" name="name" /><br/>
-        <input type="submit" value="Submit" class="newbutton">
+        <input type="submit" value="Submit" class="newbutton" disabled="disabled" id="submitNewUser">
     </form>
 </div>
-
+<script>
+function validateNewUser(e) {
+    var enableSubmit = true;
+    // check that there's a username specified
+    if (document.getElementById("user_new").value.length < 1) {
+        enableSubmit = false;
+    }
+    // check that the proposed password is long enough
+    if (document.getElementById("password_new").value.length < 8) {
+        enableSubmit = false;
+    }
+    // check that they successfully typed the same thing in both password fields
+    if (document.getElementById("password_new").value != document.getElementById("password2").value) {
+        enableSubmit = false;
+    }
+    // check that the email address looks like an email address
+    if (!isEmailValid(document.getElementById("email").value)) {
+        enableSubmit = false;
+    }
+    // check that a name is given
+    if (document.getElementById("name").value.length < 1) {
+        enableSubmit = false;
+    }
+    document.getElementById("submitNewUser").disabled = !enableSubmit;
+}
+document.getElementById("user_new").addEventListener('input', validateNewUser);
+document.getElementById("password_new").addEventListener('input', validateNewUser);
+document.getElementById("password2").addEventListener('input', validateNewUser);
+document.getElementById("email").addEventListener('input', validateNewUser);
+document.getElementById("name").addEventListener('input', validateNewUser);
+</script>
 </body>
 </html>
