@@ -27,8 +27,13 @@ var landingApp = new Vue({
             this.$data.allowedToVote = response.data.allowedToVote;
             this.$data.admin = response.data.admin;
             this.$data.newName = this.$data.name;
+            if (response.data.email != response.data.currentEmail) {
+                this.$data.newEmailNote = 'Please check your email for a confirmation message.';
+            }
+            else {
+                this.$data.newEmailNote = '';
+            }
             this.$data.newEmail = response.data.email;  // email most recently entered will be in the email field
-            this.$data.newEmailNote = '';
         },
         saveEdits: function() {
             let url = "voters/" + this.$data.username;
@@ -40,9 +45,8 @@ var landingApp = new Vue({
             });
         },
         processUpdateResponse: function(response) {
-            this.$data.name = this.$data.newName;
+            this.getUserInfo();
             this.$data.isShowingEdit = false;
-            this.$data.newEmailNote = 'Please chack your email for a confirmation message.';
         }
     },
     computed: {

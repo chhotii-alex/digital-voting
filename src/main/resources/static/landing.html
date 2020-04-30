@@ -50,7 +50,9 @@ function checkNewPasswords(e) {
         <button class="loginbutton" :disabled="!canSaveEdits" v-on:click="saveEdits">Save Changes</button>
     </div>
     <i>{{ newEmailNote }}</i>
-    <button class="loginbutton" v-on:click="getUserInfo">Refresh</button>
+    <div v-if="newEmailNote">
+        <button class="loginbutton" v-on:click="getUserInfo">Refresh</button>
+    </div>
 </div>
 
 <button onclick="showChangePassword()" class="loginbutton">Change My Password</button>
