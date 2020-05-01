@@ -1,9 +1,15 @@
 // global variables
 gPublicKey = null;
 gModulus = null;
+gTrouble = false;
 
 function LogTrouble(message) {
     console.log(message);
+    gTrouble = true;
+}
+
+function isTrouble() {
+    return gTrouble;
 }
 
 function setStorageString(key, cvalue) {
@@ -15,8 +21,6 @@ function setStorageData(key, data) {
 function getStorageString(key) {
       var value = window.localStorage.getItem(key);
       value = decodeURIComponent(value);
-      console.log("Found in storage for key: " + key);
-      console.log(key);
       return value;
 }
 function getStorageData(key) {
@@ -24,8 +28,6 @@ function getStorageData(key) {
       if (str) {
         try {
           let obj = JSON.parse(str);
-          console.log("parsed from storage: ");
-          console.log(obj);
           return obj;
         }
         catch (err) {
@@ -202,7 +204,6 @@ class Ballot {
         var k;
         do {
             k = Random.randomBig(1, n);
-            console.log("Trying a k: " + k.toString(10));
         } while (bigInt.gcd(k,n).compare(bigInt.one) != 0);
         return k;
     };
@@ -254,6 +255,9 @@ class Ballot {
     vote() {
         let prompt = "Do you want to vote " + this.currentlySelectedResponse + " on the question " + this.theQuestion.text;
         if (!confirm(prompt)) { return; }
+        this.submitVote();
+    };
+    submitVote() {
         this.submittedResponse = this.currentlySelectedResponse;
         var responseChit = this.chitForResponse(this.currentlySelectedResponse);
         let payload = { meChit: this.personalChit.getMessageText(),
@@ -265,6 +269,7 @@ class Ballot {
         promise.then( response => this.processVoteResponse(response) )
             .catch(function (error) {
                 console.log(error);
+                LogTrouble("vote failed to post");
             });
     };
     processVoteResponse() {
@@ -278,7 +283,7 @@ class Ballot {
         let url = "ballot/" + this.theQuestion.id + "/verify";
         let promise = axios.get(url);
         promise.then( response => this.processVerificationData(response) )
-            .catch( error => console.log(error) );
+            .catch( error => LogTrouble(error) );
     }
     processVerificationData(response) {
         var responseChit = this.chitForResponse(this.submittedResponse);
@@ -304,13 +309,15 @@ class Ballot {
             if (!this.personalChit.matchesID(voterID)) { continue; }
             if (!this.iVoted()) {
 		            this.verificationMessage = "The CTF claims I voted, and I don't remember voting!";
-                    return false;
+		            LogTrouble(this.verificationMessage);
+                    return;
             }
             else {
 		            var responseID = record.responseChitNumber;
 		            if (!responseChit.matchesID(responseID)) {
 			            this.verificationMessage = "The CTF reports an invalid number for my response!";
-			            return false;
+    		            LogTrouble(this.verificationMessage);
+			            return;
 		            }
 		            var responseInReport = record['response'];
 		            if (responseInReport == this.submittedResponse) {
@@ -318,7 +325,8 @@ class Ballot {
 		            }
                     else {
                         this.verificationMessage = "The CTF claims I voted differently than I remember!";
-                        return false;
+    		            LogTrouble(this.verificationMessage);
+                        return;
                     }
             }
 	    }
@@ -327,6 +335,7 @@ class Ballot {
 	    }
 	    else {
 	        this.verificationMessage = "Verification of vote failed.";
+            LogTrouble(this.verificationMessage);
 	    }
     };
 };
@@ -341,6 +350,7 @@ var voterApp = new Vue({
         admin: false,
         errorText: '',
         votableQuestions: [],
+        isKeyInfoKnown: false,
     },
     mounted() {
         this.$data.username = getUser();
@@ -357,11 +367,11 @@ var voterApp = new Vue({
             if (this.$data.allowedToVote) {
                 this.fetchCTFKeys();
                 this.checkForNewQuestions();
-                // TODO: seems to be a bug? Doesn't always show all new questions right away?
             }
         },
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;
+            LogTrouble(this.$data.errorText);
         },
         fetchQuestions: function() {  // Complete list of questions from admin's point of view
             let url = "questions/";
@@ -376,6 +386,7 @@ var voterApp = new Vue({
         processKeys: function(response) {
             gPublicKey = response.data.public;
             gModulus = response.data.modulus;
+            this.$data.isKeyInfoKnown = true;
         },
         checkForNewQuestions: function() {  // from voter's POV: questions that they can vote on now
             let url = "ballots/";
@@ -405,8 +416,14 @@ var voterApp = new Vue({
                     }
                 }
                 if (!found) {
-                    var q = new VotableQuestion(obj);
-                    this.$data.votableQuestions.push(q);
+                    /* Only process newly opened questions and instantiate instances of VotableQuestion after
+                        the query for the CTF's key info has returned the numbers! A VotableQuestion's Ballot's
+                        Chits can only choose its random numbers, and get signed, after we have those numbers.
+                    */
+                    if (this.isKeyInfoKnown) {
+                        var q = new VotableQuestion(obj);
+                        this.$data.votableQuestions.push(q);
+                    }
                 }
             }
         }

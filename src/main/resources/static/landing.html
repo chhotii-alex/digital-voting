@@ -29,8 +29,9 @@ function checkNewPasswords(e) {
 </script>
 <div id="landingapp">
     Welcome, {{ username }} <p/>
+    <span v-if="username" ><a href="/">Return to Login Page</a></span>
     <div v-show="admin">
-        <a href="admin.html" target="_blank"  Open the Administration Page</a>
+        <a href="admin.html" target="_blank"  >Open the Administration Page</a>
     </div>
     <div v-show="allowedToVote" >
         <a href="voteapp.html" target="_blank" >Open the Voting Page</a>

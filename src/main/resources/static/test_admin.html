@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <title>Testing Page</title>
+    <script src="cookie.js"></script>
+    <script src="question.js"></script>
+</head>
+<body>
+<link rel="stylesheet" type="text/css" href="voting.css" >
+<div id="adminapp">
+    Welcome, {{ name }} <br/>
+    <div v-for="question in allquestions" class="boxed" >
+        Status: <em>{{ question.status }}</em> <p/>
+        <span v-show="!question.canBeEdited()" >
+                <h3>
+                    {{ question.text }}
+                </h3>
+            </span>
+        <span v-show="question.canBeEdited()" >
+                <input v-model="question.text" size="80" />
+            </span>
+        <div v-for="option in question.possibleResponses" >
+            <span v-show="!question.canBeEdited()" >&bull; {{ option.text }}</span>
+            <span v-show="question.canBeEdited()" >
+                    <input v-model="option.text" maxlength="80" />
+                    <button  class="borderless"
+                             v-show="question.canDeleteOption()" v-on:click="deleteOption" :id="question.id+':'+option.text">
+                        Delete
+                    </button>
+                </span>
+        </div>
+        <button  class="borderless"
+                 v-show="question.canBeEdited()" v-on:click="question.addOption()">Add Option</button><br/>
+        <button  class="bigbutton"
+                 :disabled="!question.canBeSaved()" v-show="question.canBeEdited()" v-on:click="question.saveMe()">Save</button>
+        <button  class="bigbutton"
+                 :disabled="question.hasUnsavedChanges()" v-show="question.canBePosted()" v-on:click="question.postMe()">Start Polling</button>
+        <button  class="bigbutton"
+                 v-show="question.canBeClosed()" v-on:click="question.closeMe()">End Polling</button>
+        <br/>
+        <!-- TODO: timer tick to dynamically update display of results of questions in polling status -->
+        <b>Results:</b>
+        <span v-for="(count, opt) in question.results" >
+                <i>{{ opt }} :</i>  {{ count }}
+            </span>
+    </div>
+    <button  class="bigbutton" v-on:click="newQuestion" >Create New Question</button>
+</div>
+<script src="admin.js"></script>
+<script>
+    var adverbs = ["softly", "quickly", "stealthily"];
+    var verbs = ["eat", "drink", "dance with", "purchase"];
+    var adjectives = ["green", "blue", "purple", "red", "orange", "yellow", "beige", "fuzzy", "squishy" ];
+    var nouns = ["cat", "cake", "sofa", "bag", "pillow", "reistafel", "chocolate"];
+    function composeSillyQuestion() {
+        var adv = adverbs[Math.floor(Math.random()*adverbs.length)];
+        var verb = verbs[Math.floor(Math.random()*verbs.length)];
+        var adj = adjectives[Math.floor(Math.random()*adjectives.length)];
+        var noun = nouns[Math.floor(Math.random()*nouns.length)];
+        return "Shall we " + adv + " " + verb + " the " + adj + " " + noun + "?";
+    }
+    function postIfPostable(q) {
+        if (q.canBePosted()) {
+            q.post();
+        }
+    }
+    function makeNewQuestion() {
+        var q = adminApp.newQuestion(composeSillyQuestion());
+        q.saveMe();
+    }
+    function postPostableQuestions() {
+        adminApp.$data.allquestions.forEach(q => postIfPostable(q));
+    }
+    setInterval(makeNewQuestion, 10*1000);
+    setInterval(postPostableQuestions, 12*1000);
+</script>
+</body>
+</html>

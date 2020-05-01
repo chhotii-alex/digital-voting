@@ -129,6 +129,10 @@ class AdministratableQuestion extends Question {
         let prompt = "Are you sure you want to start polling on this question now: " + this.text;
         let response = confirm(prompt);
         if (response) {
+            this.post();
+        }
+    }
+    post() {
             let url = "questions/" + this.original.id + "/post";
             let promise = axios.patch(url, this);
             promise.then(function (response) {
@@ -137,7 +141,7 @@ class AdministratableQuestion extends Question {
             .catch(function (error) {
                 console.log(error);
             });
-        }
+
     }
     canBeClosed() {
         if (this.original == null) {
@@ -228,7 +232,6 @@ var adminApp = new Vue({
             this.$data.admin = response.data.admin;
         },
         processQuestionList: function(response) {
-            console.log(response.data);
             this.$data.showingQuestions = true;
             var i;
             this.$data.allquestions = [];
@@ -246,12 +249,16 @@ var adminApp = new Vue({
             let aPromise = axios.get(url);
             aPromise.then(response => this.processQuestionList(response), error => this.dealWithError(error));
         },
-        newQuestion: function() {
+        newQuestion: function(text=null) {
             let item = new AdministratableQuestion();
+            if ((typeof text) == "string" ) {
+                item.text = text;
+            }
             item.addResponseOption(new ResponseOption("yes"));
             item.addResponseOption(new ResponseOption("no"));
             item.addResponseOption(new ResponseOption("abstain"));
             this.$data.allquestions.push(item);
+            return item;
         },
         deleteOption: function(sender) {
             let fields = sender.target.id.split(":");

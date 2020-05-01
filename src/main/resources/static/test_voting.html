@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome to the Digital Voting Platform</title>
+    <title>Testing Page</title>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
@@ -12,6 +12,7 @@
 </head>
 <body>
 <link rel="stylesheet" type="text/css" href="voting.css" >
+<h1>for testing purposes only</h1>
 <div id="voterapp">
     Hello, {{ username }} <p/>
     <div v-show="allowedToVote" >
@@ -29,7 +30,7 @@
             </div>
             <div v-if="question.canVote()">
                 <button v-on:click="question.ballot.vote()" class="bigbutton">
-                Submit Vote
+                    Submit Vote
                 </button>
             </div>
             <div v-if="question.ballot.iVoted()">
@@ -42,12 +43,48 @@
                 <b>{{ opt }} :</b> <i> {{ count }} </i>
             </div>
         </div>
-        <button v-if="isKeyInfoKnown" v-on:click="checkForNewQuestions" class="bigbutton" >
-            Update Question List
-        </button>
+        <button v-on:click="checkForNewQuestions" class="bigbutton" >Update Question List</button>
     </div>
 </div>
-<form action="logout"><input type="submit" value="Log Out" class="loginbutton" ></form>
 <script src="voting.js"></script>
+<script>
+function fetchQuestions() {
+    if (!isTrouble()) {
+        voterApp.checkForNewQuestions();
+    }
+}
+function chooseRandomAnswer(q) {
+    if (q.ballot.submittedResponse) { return; }
+    var i = Math.floor(Math.random()*q.possibleResponses.length);
+    q.ballot.currentlySelectedResponse = q.possibleResponses[i].getText();
+}
+function chooseAnswers() {
+    if (isTrouble()) { return; }
+    voterApp.votableQuestions.forEach( q => chooseRandomAnswer(q) );
+}
+function voteIfVotable(q) {
+    if (q.canVote()) {
+        q.ballot.submitVote();
+    }
+}
+function voteAll() {
+    if (isTrouble()) { return; }
+    voterApp.votableQuestions.forEach( q => voteIfVotable(q) );
+}
+function tryVerify(q) {
+    if (q.ballot.iVoted()) {
+        q.ballot.verifyVote();
+    }
+}
+function verifyAll() {
+    if (isTrouble()) { return; }
+    voterApp.votableQuestions.forEach( q => tryVerify(q) );
+}
+setInterval(fetchQuestions, 5*1000);
+setInterval(chooseAnswers, 7*1000);
+setInterval(voteAll, 11*1000);
+setInterval(verifyAll, 13*1000);
+
+</script>
 </body>
 </html>
