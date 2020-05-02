@@ -1,5 +1,4 @@
 class ResponseOption {
-    // TODO: enforce length limit of 80 characters on text
     constructor(text) {
         this.text = text;
     };

@@ -33,6 +33,10 @@ public class LoginController extends APIController {
     @Value("classpath:static/login.html")
     protected Resource loginPage;
 
+    /**File containing page we return from new user form if new user proposed username not unique */
+    @Value("classpath:static/dupnameerr.html")
+    protected Resource duplicateNamePage;
+
     /** File continaing the page with the 'forgot password' form */
     @Value("classpath:static/forgot.html")
     protected Resource forgotPasswordPage;
@@ -41,7 +45,7 @@ public class LoginController extends APIController {
     @Value("classpath:static/checkemail.html")
     protected Resource checkEmailPage;
 
-    /** TODO Probably not the best design that we have The Page That Does Everything fed in response to login success */
+    /** Landing page, fed in response to login success. Links to Voter and Admin pages as needed. */
     @Value("classpath:static/landing.html")
     protected Resource landingPage;
 
@@ -53,7 +57,7 @@ public class LoginController extends APIController {
     @Value("classpath:static/success.html")
     protected Resource successPage;
 
-    // TODO: we badly need reset password functionality
+    // Log-in Page
     @GetMapping("/login")
     public ResponseEntity getLoginPage() throws Exception {
         return ResponseEntity.ok().body(textFromResource(loginPage));
@@ -187,7 +191,6 @@ public class LoginController extends APIController {
     @PostMapping("/newuser")
     public ResponseEntity newUserForm(@RequestBody String formData) throws Exception {
         Map<String, String> formValue = parseForm(formData);
-        // TODO: implement ALL these validations
         // This duplicates a lot of this checking on the form itself, in JavaScript
         boolean validationChecksOK = true;
         // "user" field mandatory
@@ -196,10 +199,10 @@ public class LoginController extends APIController {
         if (formValue.get("user").indexOf(' ') >= 0) { validationChecksOK = false; }
         // Proposed user name not already used by any other account
         Voter existingAccount = voterListManager.getForUsername(formValue.get("user"));
-        if (existingAccount != null) {
-            // TODO: be much more user-friendly here; return a page w/ this message and with a link back to login.html
-            String message = String.format("An account with the username '%s' already exists", formValue.get("user"));
-            throw new ForbiddenException();
+        if (existingAccount != null) { // Inform user that there's an existing account with that username
+            String text = textFromResource(duplicateNamePage);
+            text = text.replaceAll("##USER##", formValue.get("user"));
+            return ResponseEntity.ok().body(text);
         }
         // "password" field mandatory
         if (!formValue.containsKey("password")) { validationChecksOK = false; }
@@ -209,8 +212,7 @@ public class LoginController extends APIController {
         if (!formValue.get("password").equals(formValue.get("password2"))) { validationChecksOK = false; }
         // "email" field mandatory
         if (!formValue.containsKey("email")) { validationChecksOK = false; }
-        // email is a valid email address
-        // email not already used by any other account, either in email or oldEmail field
+        // TODO: validate that email is a valid email address
         // "name" field mandatory
         if (!formValue.containsKey("name")) { validationChecksOK = false; }
         if (!validationChecksOK) {
@@ -274,7 +276,6 @@ public class LoginController extends APIController {
             return ResponseEntity.badRequest().body("Unknown user.");
         }
         if (voterListManager.confirmEmail(v, code)) {
-            // TODO: return success page here not login
             return ResponseEntity.ok().body(textFromResource(successPage));
         }
         else {

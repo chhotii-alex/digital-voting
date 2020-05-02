@@ -36,16 +36,14 @@ function checkNewPasswords(e) {
     <div v-show="allowedToVote" >
         <a href="voteapp.html" target="_blank" >Open the Voting Page</a>
     </div>
-    <!-- TODO: make these editable and PATCH and save to db -->
     {{ name }}
-    {{ email }}  <!-- TODO: display the EFFECTIVE email address here (which may be oldEMail if not confirmed) -->
+    {{ email }}  <!-- displays the EFFECTIVE email address here (which may be oldEMail if not confirmed) -->
     <div v-show="!isShowingEdit" >
         <button class="loginbutton" v-on:click="isShowingEdit=true" >Edit Name and Email</button>
     </div>
     <div v-show="isShowingEdit" >
 
         Enter new name: <input v-model="newName" /><br/>
-        <!-- TODO: newEmail should still be value in EMAIL column, even when showing effective email above -->
         Enter new email address: <input v-model="newEmail" /><br/>
         <i>Note: any new email address will not be in effect until confirmed.</i>
         <button class="loginbutton" :disabled="!canSaveEdits" v-on:click="saveEdits">Save Changes</button>

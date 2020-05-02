@@ -199,7 +199,6 @@ class Ballot {
         savedBallotInfo.responseChits = this.responseChits;
         setStorageData(this.ballotKey, savedBallotInfo);
     }
-    // TODO: intermittent bug somewhere in this process? Some bigint function given a null?
     static randomKforModulus(n) {
         var k;
         do {

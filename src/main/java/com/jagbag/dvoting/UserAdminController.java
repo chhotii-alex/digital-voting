@@ -64,7 +64,7 @@ public class UserAdminController extends APIController {
     }
 
     /*
-    TODO: the user themself can edit email or name
+    The user themself can edit email or name
      */
     @PatchMapping("/voters/{username}")
     public synchronized ResponseEntity patchVoterInfo(@RequestHeader HttpHeaders headers, @RequestBody Voter patchVoter, @PathVariable String username) {
@@ -75,7 +75,7 @@ public class UserAdminController extends APIController {
         }
         v.setName(patchVoter.getName());
         if (!v.getCurrentEmail().equals(patchVoter.getEmail())) {
-            // TODO: email updating protocol
+            // email updating protocol
             v.submitEmailChange(patchVoter.getEmail());
             sendConfirmationEmail(v);
         }
@@ -113,7 +113,8 @@ public class UserAdminController extends APIController {
         }
     }
 
-    /* TODO: if it's an administrator, not the user themself, don't allow deleting a voting-priv user */
+    /* TODO: expose this functionality in the client
+    TODO: if it's an administrator, not the user themself, don't allow deleting a voting-priv user */
     @DeleteMapping("/voters/{username}")
     public synchronized ResponseEntity deleteVoter(@RequestHeader HttpHeaders headers, @PathVariable String username) {
         loginManager.validateCanAdministerUser(headers, username);

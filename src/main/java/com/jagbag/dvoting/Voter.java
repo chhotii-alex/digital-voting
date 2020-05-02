@@ -25,7 +25,7 @@ import javax.xml.bind.DatatypeConverter;
  * When someone creates a new account, this immediately creates a record in the database, but they cannot log
  * in, nor do they show up on the admin's list to grant privileges to, untill they have clicked on the link
  * in an email that they receive with the confirmationCode in the query.
- * TODO When someone changes their email account, the old email is saved and continues to be used until, again,
+ * When someone changes their email account, the old email is saved and continues to be used until, again,
  * they do the confirmationCode email thing.
  * Only a Voter with allowedToVote set to true can submit chits to be signed. Thus only someone with allowedToVote
  * privilege can cast a vote (because only signed chits are accepted by the CTF.)

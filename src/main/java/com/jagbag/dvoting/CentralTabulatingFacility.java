@@ -42,7 +42,8 @@ public class CentralTabulatingFacility {
     voted before the re-start would have the opportunity to vote twice. Without any storage of the key, upon start-up,
     we need to close polling on all questions, and the only way to proceed would be to start a fresh round of polling
     by posing the same question again as a new question.
-    TODO: value the pollCloseWhen field on any open questions found in the database upon starting.
+    This is why we have StartupActions value the pollCloseWhen field on any open questions found in the database
+    upon starting.
 
     What might we do to avoid this? (How likely is a re-start of the service, anyway?) Storage of the key to disk
     means that it could be stolen. I assume that anyone who has administrator access is not a disinterested party

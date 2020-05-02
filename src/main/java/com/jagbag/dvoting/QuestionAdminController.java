@@ -42,10 +42,8 @@ public class QuestionAdminController extends APIController {
         }
     }
 
-    /*
-    Update question text. Add, remove, or alter ResponseOptions.
-    TODO: make sure, in the client, that response options all have unique text.
-    TODO: in the client, buttons to delete a response option, or add one.
+    /**
+    Update question text; and/or dd, remove, or alter ResponseOptions.
      */
     @PatchMapping("/questions/{quid}")
     public synchronized ResponseEntity patchQuestion(@RequestHeader HttpHeaders headers,
@@ -83,7 +81,6 @@ public class QuestionAdminController extends APIController {
     }
 /*
     If it's not yet posted, we can post it (open it up for polling)
-    TODO: in the client, make sure not posting a question with fewer than 2 response options.
  */
     @PatchMapping("/questions/{quid}/post")
     public synchronized ResponseEntity postQuestion(@RequestHeader HttpHeaders headers,
@@ -113,7 +110,6 @@ public class QuestionAdminController extends APIController {
 
     /*
     If it is posted, we can close it (disallow any additional voting)
-    TODO: expose the close functionality in the admin's side of the client
      */
     @PatchMapping("/questions/{quid}/close")
     public synchronized ResponseEntity closeQuestion(@RequestHeader HttpHeaders headers,

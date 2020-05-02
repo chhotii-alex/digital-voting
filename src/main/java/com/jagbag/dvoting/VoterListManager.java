@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.Query;
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -150,9 +151,32 @@ public class VoterListManager {
         }
     }
 
+    /**
+     * Query for a Voter with this email address, or this is the old email address
+     * @param email
+     * @return a Voter with matching email or old email, or null
+     */
     public Voter getForEmail(String email) {
-        // TODO: query for a Voter with this email address, and email confirmed, or this is the old email address
-        return null;
+        EntityManager em = emf.createEntityManager();
+        Voter v = null;
+        String hql = "select v from Voter v where v.email like :email";
+        Query query = em.createQuery(hql);
+        query.setParameter("email", email);
+        List results = query.getResultList();
+        if (results.size() > 0) {
+            v = (Voter)(results.get(0));
+        }
+        if (v == null) {
+            hql = "select v from Voter v where v.oldEmail like :email";
+            query = em.createQuery(hql);
+            query.setParameter("email", email);
+            results = query.getResultList();
+            if (results.size() > 0) {
+                v = (Voter)(results.get(0));
+            }
+        }
+        em.close();
+        return v;
     }
 
     /**
