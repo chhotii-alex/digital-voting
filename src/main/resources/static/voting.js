@@ -274,6 +274,7 @@ class Ballot {
     processVoteResponse() {
         this.voteAcknowledged = true;
         this.saveToLocalStorage();
+        this.verifyVote();
     };
     iVoted() {
         return (this.submittedResponse != null);
@@ -330,7 +331,12 @@ class Ballot {
             }
 	    }
 	    if (this.iVoted() == responseFound) {
-	        this.verificationMessage = 'Verified!';
+	        if (this.iVoted()) {
+    	        this.verificationMessage = 'Verified!';
+    	    }
+    	    else {
+    	        this.verificationMessage = '';
+    	    }
 	    }
 	    else {
 	        this.verificationMessage = "Verification of vote failed.";
@@ -346,7 +352,6 @@ var voterApp = new Vue({
         name: null,
         email: null,
         allowedToVote: false,
-        admin: false,
         errorText: '',
         votableQuestions: [],
         isKeyInfoKnown: false,
@@ -357,6 +362,17 @@ var voterApp = new Vue({
         let aPromise = axios.get(url);
         aPromise.then(response => this.processUserInfo(response), error => this.dealWithError(error));
     },
+    computed: {
+        anyQuestionsVoted: function() {
+            var anyVoted = false;
+            this.$data.votableQuestions.forEach( q => {
+                if (q.ballot.iVoted()) {
+                    anyVoted = true;
+                }
+            } );
+            return anyVoted;
+        }
+    },
     methods: {
         processUserInfo: function(response) {
             this.$data.name= response.data.name;
@@ -365,17 +381,11 @@ var voterApp = new Vue({
             this.$data.admin = response.data.admin;
             if (this.$data.allowedToVote) {
                 this.fetchCTFKeys();
-                this.checkForNewQuestions();
             }
         },
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;
             LogTrouble(this.$data.errorText);
-        },
-        fetchQuestions: function() {  // Complete list of questions from admin's point of view
-            let url = "questions/";
-            let aPromise = axios.get(url);
-            aPromise.then(response => this.processQuestionList(response), error => this.dealWithError(error));
         },
         fetchCTFKeys: function() {
             let url = "ballots/keys/";
@@ -386,6 +396,7 @@ var voterApp = new Vue({
             gPublicKey = response.data.public;
             gModulus = response.data.modulus;
             this.$data.isKeyInfoKnown = true;
+            this.checkForNewQuestions();
         },
         checkForNewQuestions: function() {  // from voter's POV: questions that they can vote on now
             let url = "ballots/";
@@ -425,6 +436,20 @@ var voterApp = new Vue({
                     }
                 }
             }
+            this.verifyAllNow();
+        },
+        verifyAll: function() {
+            this.$data.votableQuestions.forEach( q => {
+                q.ballot.verifyVote();
+            });
+        },
+        verifyAllNow: function() {
+            this.verifyAll();
+            if (this.$data.updateTimerToken) {
+                clearInterval(this.$data.updateTimerToken);
+                this.$data.updateTimerToken = '';
+            }
+            this.$data.updateTimerToken = setInterval( () => this.verifyAll(), 2*60*1000);
         }
     },
 });

@@ -83,7 +83,7 @@
             <button  class="bigbutton"
                      v-show="question.canBeClosed()" v-on:click="question.closeMe()">End Polling</button>
             <br/>
-            <b>Results:</b>
+            <span v-if="question.results.length" > <b>Results:</b> </span>
             <span v-for="(count, opt) in question.results" >
                 <i>{{ opt }} :</i>  {{ count }}
             </span>

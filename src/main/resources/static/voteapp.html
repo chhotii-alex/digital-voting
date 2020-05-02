@@ -34,7 +34,7 @@
             </div>
             <div v-if="question.ballot.iVoted()">
                 <button v-on:click="question.ballot.verifyVote()" class="bigbutton">
-                    Verify
+                    Verify Now
                 </button>
             </div>
             <i>{{ question.ballot.verificationMessage }}</i>
@@ -44,6 +44,9 @@
         </div>
         <button v-if="isKeyInfoKnown" v-on:click="checkForNewQuestions" class="bigbutton" >
             Update Question List
+        </button>
+        <button v-if="anyQuestionsVoted" v-on:click="verifyAll" class="bigbutton" >
+            Verify All Now
         </button>
     </div>
 </div>
