@@ -26,6 +26,7 @@ class Question {
         this.possibleResponses.push(opt);
     }
     addResponseOptionsFrom(obj) {
+        this.possibleResponses = [];
         var j;
         for (j = 0; j < obj.possibleResponses.length; ++j) {
              var ro = obj.possibleResponses[j];

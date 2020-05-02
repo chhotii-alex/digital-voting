@@ -11,12 +11,21 @@ class AdministratableQuestion extends Question {
         }
         else {
             this.id = obj.id;
+            this.updateFrom(true, obj);
+        }
+    }
+    updateFrom(doingInitialization, obj) {
+        // if this is an update of a question we're alreday listing, Do not over-write changes made in this client
+        if (doingInitialization || !this.hasDifferencesFromOriginal()) {
             this.text = obj.text;
-            this.status = obj.status;
             this.addResponseOptionsFrom(obj);
-            if (this.status === 'polling' || this.status === 'closed' ) {
-                this.reportVotes();
-            }
+        }
+        this.status = obj.status;
+        this.postable = obj.postable;
+        this.editable = obj.editable;
+        this.closable = obj.closable;
+        if (this.status === 'polling' || this.status === 'closed' ) {
+            this.reportVotes();
         }
     }
     addOption() {
@@ -64,10 +73,14 @@ class AdministratableQuestion extends Question {
         return (this.possibleResponses.length > 2);
     }
     canBeEdited() {
-        return (this.original == null || this.original.editable);
+        return (this.original == null || this.editable);
     }
     hasUnsavedChanges() {
         if (!this.original) { return true; }
+        if (this.hasDifferencesFromOriginal()) {return true;}
+        return false;
+    }
+    hasDifferencesFromOriginal() {
         if (this.original.text != this.text) { return true; }
         if (this.possibleResponses.length != this.original.possibleResponses.length) { return true; }
         var i;
@@ -104,6 +117,7 @@ class AdministratableQuestion extends Question {
         var promise;
         this.trimSpaces();
         if (this.original) {
+            // actually send the PATCH
             let url = "questions/" + this.original.id;
             promise = axios.patch(url, this);
         }
@@ -111,7 +125,17 @@ class AdministratableQuestion extends Question {
             let url = "questions";
             promise = axios.post(url, this);
         }
-        promise.then(function (response) {
+        promise.then( (response) => {  // note: use a lambda! we can refer to 'this' in a lambda b/c lexical binding
+            this.original = response.data; this.updateFrom(true, response.data);  // re-initialize from what's now in database
+            if (this.id) {
+                if (this.id != response.data.id) {
+                    console.log("??!?!??!?!");
+                }
+            }
+            else {
+                this.id = response.data.id;
+                adminApp.setQuestionForID(response.data.id, this);
+            }
             adminApp.fetchQuestions();
         })
         .catch(function (error) {
@@ -119,10 +143,10 @@ class AdministratableQuestion extends Question {
         });
     }
     canBePosted() {
-        if (this.original == null) {
+        if (this.original == null) {  // If it has never been saved to the database, don't post
             return false;
         }
-        return this.original.postable;
+        return this.postable;
     }
     postMe() {
         if (!this.canBePosted()) { return; }
@@ -144,10 +168,10 @@ class AdministratableQuestion extends Question {
 
     }
     canBeClosed() {
-        if (this.original == null) {
+        if (this.original == null) {  // if it's not in the database, it has never been up for polling
             return false;
         }
-        return this.original.closable;
+        return this.closable;
     }
     closeMe() {
         if (!this.canBeClosed()) { return; }
@@ -214,6 +238,7 @@ var adminApp = new Vue({
         allowedToVote: false,
         admin: false,
         allquestions: [],
+        questionsById: {},
         showingQuestions: false,
         allusers: [],
         errorText: '',
@@ -231,14 +256,22 @@ var adminApp = new Vue({
             this.$data.allowedToVote = response.data.allowedToVote;
             this.$data.admin = response.data.admin;
         },
+        setQuestionForID(id, q) {
+            this.$data.questionsById[id] = q;
+        },
         processQuestionList: function(response) {
             this.$data.showingQuestions = true;
             var i;
-            this.$data.allquestions = [];
             for (i = 0; i < response.data.length; ++i) {
                 var obj = response.data[i];
-                var q = new AdministratableQuestion(obj);
-                this.$data.allquestions.push(q);
+                if (this.$data.questionsById[obj.id]) {
+                    this.$data.questionsById[obj.id].updateFrom(false, obj);
+                }
+                else {
+                    var q = new AdministratableQuestion(obj);
+                    this.$data.allquestions.push(q);
+                    this.setQuestionForID(obj.id, q);
+                }
             }
         },
         dealWithError: function(error) {
