@@ -41,7 +41,6 @@
         <button  class="bigbutton"
                  v-show="question.canBeClosed()" v-on:click="question.closeMe()">End Polling</button>
         <br/>
-        <!-- TODO: timer tick to dynamically update display of results of questions in polling status -->
         <b>Results:</b>
         <span v-for="(count, opt) in question.results" >
                 <i>{{ opt }} :</i>  {{ count }}

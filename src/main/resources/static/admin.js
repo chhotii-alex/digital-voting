@@ -242,6 +242,7 @@ var adminApp = new Vue({
         showingQuestions: false,
         allusers: [],
         errorText: '',
+        updateTimerToken: '',
     },
     mounted() {
         this.$data.username = getUser();
@@ -281,6 +282,14 @@ var adminApp = new Vue({
             let url = "questions/";
             let aPromise = axios.get(url);
             aPromise.then(response => this.processQuestionList(response), error => this.dealWithError(error));
+        },
+        startRepeatedlyUpdatingQuestions: function() {
+            this.fetchQuestions();
+            if (this.$data.updateTimerToken) {
+                clearInterval(this.$data.updateTimerToken);
+                this.$data.updateTimerToken = '';
+            }
+            this.$data.updateTimerToken = setInterval( () => this.fetchQuestions(), 30*1000);
         },
         newQuestion: function(text=null) {
             let item = new AdministratableQuestion();

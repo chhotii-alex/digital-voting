@@ -19,9 +19,6 @@
         <div v-for="question in votableQuestions" class="boxed">
             Question {{ question.id }}.<br/>
             {{ question.text }}
-            <!--
-                TODO: make buttons unfocusable when they are in effect disabled
-                TODO: 'verify all' button -->
             <div v-for="option in question.possibleResponses" >
                 <button v-on:click="question.ballot.setCurrentlySelectedResponse(option.text)"
                         :class="question.ballot.classForOption(option.text)">

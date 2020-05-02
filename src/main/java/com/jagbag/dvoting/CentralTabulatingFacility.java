@@ -142,6 +142,7 @@ public class CentralTabulatingFacility {
         Question theQuestion = lookUpQuestion(quid);
         if (!theQuestion.getStatus().equals("polling")) {
             return null; // TODO: user experience if signing chits fails; possible if Q closed just as they load
+            // TODO: what happens if you try to vote on a closed question anyway?
         }
         // Check that a voter doesn't register more than one ballot per question.
         Map<Long, Set<String>> blindedChitsPerQuestion
