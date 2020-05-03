@@ -19,6 +19,7 @@ import java.util.List;
 @RestController
 public class CommonInfoController extends APIController {
     @Autowired private VoterListManager voterListManager;
+    @Autowired private CentralTabulatingFacility ctf;
 
     @GetMapping("/questions")
     public ResponseEntity<List<Question>> getQuestions(@RequestHeader HttpHeaders headers) {
@@ -33,19 +34,19 @@ public class CommonInfoController extends APIController {
     }
 
     /**
-     * getInfoOnQuestion
+     * Get a Question through the JSON API, given a question ID
      * @param quid - id of a Question
-     * @return A Question object, with its ResponseOptions, plus all relevant Signed Ballots, and Votes
-     * TODO: implement getInfoOnQuestion
+     * @return A Question object, with its ResponseOptions
+     * TODO: test getInfoOnQuestion
      */
     @GetMapping("/questions/{quid}")
-    public Voter getInfoOnQuestion(@RequestHeader HttpHeaders headers, @PathVariable int quid) {
+    public Question getInfoOnQuestion(@RequestHeader HttpHeaders headers, @PathVariable int quid) {
         loginManager.validatePrivilegedUser(headers);
-        //     Quesion q = questionManager.getForQuestionId(quid);
-   //     if (q == null) {
+        Question q = ctf.lookUpQuestion(quid);
+        if (q == null) {
             throw new ItemNotFoundException();
-    //    }
-    //    return q;
+        }
+        return q;
     }
 
     @GetMapping("/voters")

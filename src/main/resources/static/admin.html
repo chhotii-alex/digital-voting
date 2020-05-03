@@ -90,7 +90,11 @@
                 <i>{{ opt }} :</i>  {{ count }}
             </span>
         </div>
-        <button  class="bigbutton" v-show="showingQuestions" v-on:click="newQuestion" >Create New Question</button>
+        <span v-show="showingQuestions" >
+            <button  class="bigbutton"  v-on:click="newQuestion" >Create New Question</button>
+            <input type="checkbox" id="showOld" v-model="showOldQuestions" />
+            <label for="showOld">Show Old Closed Questions </label>
+        </span>
     </div>
 </div>
 <form action="logout"  ><input type="submit" value="Log Out" class="loginbutton" ></form>

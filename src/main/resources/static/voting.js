@@ -13,10 +13,21 @@ function isTrouble() {
 }
 
 function setStorageString(key, cvalue) {
-      window.localStorage.setItem(key, encodeURIComponent(cvalue));
+    window.localStorage.setItem(key, encodeURIComponent(cvalue));
 }
 function setStorageData(key, data) {
-    setStorageString(key, JSON.stringify(data));
+    if (!getUser()) {
+        throw "Valid user not known or not logged in.";
+    }
+    var existingData = getStorageString(getUser());
+    if (existingData) {
+        existingData = JSON.parse(existingData);
+    }
+    if (!existingData) {
+        existingData = {};
+    }
+    existingData[key] = data;
+    setStorageString(getUser(), JSON.stringify(existingData));
 }
 function getStorageString(key) {
       var value = window.localStorage.getItem(key);
@@ -24,17 +35,43 @@ function getStorageString(key) {
       return value;
 }
 function getStorageData(key) {
-      let str = getStorageString(key);
+    if (!getUser()) {
+        throw "Valid user not known or not logged in.";
+    }
+    let str = getStorageString(getUser());
       if (str) {
         try {
-          let obj = JSON.parse(str);
-          return obj;
+            let obj = JSON.parse(str);
+            return obj[key];
         }
         catch (err) {
-          console.log("problem with json encoding?: " + str + " " + err);
+            console.log("problem with json encoding?: " + str + " " + err);
         }
-      }
-      return null;
+    }
+    return null;
+}
+
+function getArchivedBallotIdentifiers() {
+    if (!getUser()) {
+        throw "Valid user not known or not logged in.";
+    }
+    var results = [];
+    let str = getStorageString(getUser());
+    if (str) {
+        try {
+            let obj = JSON.parse(str);
+            for (const key in obj) {
+                let fields = key.split('.');
+                if (fields[0] == "ballot" && fields.length > 1) {
+                    results.push(fields[1]);
+                }
+            }
+        }
+        catch (err) {
+            console.log("problem with json encoding?: " + str + " " + err);
+        }
+    }
+    return results;
 }
 
 // See https://www.npmjs.com/package/big-integer for BigInteger class documentation.
@@ -70,7 +107,7 @@ class VotableQuestion extends Question {
         this.addResponseOptionsFrom(obj);
         this.text = obj.text;
         this.closed = false;
-        let ballotKey = "ballot." + getUser() + "." + this.id;
+        let ballotKey = "ballot." + this.id;
         let savedBallotInfo = getStorageData(ballotKey);
         this.ballot = new Ballot(this, ballotKey, savedBallotInfo);
     }
@@ -389,6 +426,7 @@ var voterApp = new Vue({
         errorText: '',
         votableQuestions: [],
         isKeyInfoKnown: false,
+        showOldQuestions: false,
     },
     mounted() {
         this.$data.username = getUser();
@@ -436,6 +474,31 @@ var voterApp = new Vue({
             let url = "ballots/";
             let aPromise = axios.get(url);
             aPromise.then(response => this.processOpenQuestions(response), error => this.dealWithError(error));
+        },
+        startShowingOldQuestions: function() {
+            this.$data.showOldQuestions = true;
+            let ids = getArchivedBallotIdentifiers();
+            var i;
+            for (i = 0; i < ids.length; ++i) {
+                let id = ids[i];
+                var found = false;  // whether it's already in the list we're showing
+                var j;
+                for (j = 0; j < this.$data.votableQuestions.length; ++j) {
+                     if (id ==  this.$data.votableQuestions[j].id) {
+                         found = true; break;
+                     }
+                }
+                if (!found) {
+                    let url = "/questions/" + id;
+                    let promise = axios.get(url);
+                    promise.then( response => this.processOldQuestion(response));
+                }
+            }
+        },
+        processOldQuestion: function(response) {
+            let obj = response.data;
+            var q = new VotableQuestion(obj);
+            this.$data.votableQuestions.push(q);
         },
         processOpenQuestions: function(response) {
             var i;

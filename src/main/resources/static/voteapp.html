@@ -49,6 +49,9 @@
         <button v-if="anyQuestionsVoted" v-on:click="verifyAll" class="bigbutton" >
             Verify All Now
         </button>
+        <button v-if="!showOldQuestions" v-on:click="startShowingOldQuestions" class="bigbutton" >
+            Show Old Questions
+        </button>
     </div>
 </div>
 <form action="logout"><input type="submit" value="Log Out" class="loginbutton" ></form>

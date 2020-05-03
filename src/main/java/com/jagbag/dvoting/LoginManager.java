@@ -33,7 +33,9 @@ public class LoginManager {
             if (v.checkPassword(password)) {
                 createTokenForUser(username);
                 return true;
-            } else {
+            }
+            else {
+                // TODO: exponential backoff, to mitigate dictionary attack
                 return false;
             }
         }

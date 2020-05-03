@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 
 import javax.persistence.*;
 import java.util.*;
+import java.time.*;
 
 /**
  * A question that can be put to vote. A question has text, and a list of options from which voters may choose.
@@ -79,8 +80,9 @@ public class Question {
         postedWhen = java.time.LocalDateTime.now();
     }
     public void close() {
-        closedWhen = java.time.LocalDateTime.now();
+        closedWhen = LocalDateTime.now();
     }
+    public LocalDateTime getClosedWhen() { return closedWhen; }
 
     @JsonGetter("editable")
     public boolean canEdit() {

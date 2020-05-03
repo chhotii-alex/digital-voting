@@ -261,6 +261,7 @@ var adminApp = new Vue({
         allquestions: [],
         questionsById: {},
         showingQuestions: false,
+        showOldQuestions: false,
         allusers: [],
         errorText: '',
         updateTimerToken: '',
@@ -270,6 +271,11 @@ var adminApp = new Vue({
         let url = "voters/" + this.$data.username;
         let aPromise = axios.get(url);
         aPromise.then(response => this.processUserInfo(response), error => this.dealWithError(error));
+    },
+    watch: {
+        showOldQuestions: function(val) {
+            this.fetchQuestions();  // re-fetch when the filter changes
+        },
     },
     methods: {
         processUserInfo: function(response) {
@@ -282,19 +288,38 @@ var adminApp = new Vue({
             this.$data.questionsById[id] = q;
         },
         processQuestionList: function(response) {
+            var now = Date.now();
             this.$data.showingQuestions = true;
             var i;
+            var newArray = [];
             for (i = 0; i < response.data.length; ++i) {
                 var obj = response.data[i];
+                if (!this.$data.showOldQuestions) {
+                    if (obj.status == "closed") {
+                        var closedWhen = Date.parse(obj.closedWhen);
+                        var diffInMillis = now - closedWhen;
+                        if (diffInMillis > 1000*60*60*24) {
+                            continue;
+                        }
+                    }
+                }
                 if (this.$data.questionsById[obj.id]) {
                     this.$data.questionsById[obj.id].updateFrom(false, obj);
+                    newArray.push(this.$data.questionsById[obj.id]);
                 }
                 else {
                     var q = new AdministratableQuestion(obj);
-                    this.$data.allquestions.push(q);
+                    newArray.push(q);
                     this.setQuestionForID(obj.id, q);
                 }
             }
+            for (i = 0; i < this.$data.allquestions.length; ++i) {
+                var q = this.$data.allquestions[i];
+                if (q.original == null) {
+                    newArray.push(q);
+                }
+            }
+            this.$data.allquestions = newArray;
         },
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;
