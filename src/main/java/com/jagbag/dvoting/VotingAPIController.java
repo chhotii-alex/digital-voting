@@ -61,8 +61,8 @@ public class VotingAPIController extends APIController {
         We will allow voting through a proxy, from a not-logged-in page. The fact that the ballot is
         signed authenticates it.
          */
-        ctf.receiveVoteOnQuestion(quid, vote);
-        return new ResponseEntity("ok", HttpStatus.OK);
+        HttpStatus result = ctf.receiveVoteOnQuestion(quid, vote);
+        return new ResponseEntity(result);
     }
 
     @GetMapping(value="ballot/{quid}/verify")

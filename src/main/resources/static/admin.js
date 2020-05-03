@@ -188,6 +188,27 @@ class AdministratableQuestion extends Question {
             });
         }
     }
+    canBeDeleted() {
+        return (this.status == 'new');
+    }
+    deleteMe() {
+        if (!this.canBeDeleted()) { return; }
+        let prompt = "Delete question?   " + this.text;
+        let response = confirm(prompt);
+            adminApp.removeQuestion(this);
+        if (response) {
+            if (this.original) {
+                let url = "questions/" + this.original.id + "/delete";
+                let promise = axios.delete(url, this);
+                promise.then(function (response) {
+                    adminApp.fetchQuestions();
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+           }
+        }
+    }
 }
 class Voter {
     constructor(obj) {
@@ -301,6 +322,10 @@ var adminApp = new Vue({
             item.addResponseOption(new ResponseOption("abstain"));
             this.$data.allquestions.push(item);
             return item;
+        },
+        removeQuestion: function(q) {
+            var index = this.$data.allquestions.findIndex( (element) => element == q );
+            this.$data.allquestions.splice(index, 1);
         },
         deleteOption: function(sender) {
             let fields = sender.target.id.split(":");

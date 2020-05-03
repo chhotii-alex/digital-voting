@@ -76,7 +76,8 @@ class VotableQuestion extends Question {
     }
     canVote() {
         return (!this.closed && this.ballot.currentlySelectedResponse
-                && (!this.ballot.submittedResponse || !this.ballot.voteAcknowledged));
+                && (!this.ballot.submittedResponse || !this.ballot.voteAcknowledged)
+                && this.ballot.areAllChitsSigned() );
     }
 }
 /*  TODO: How do we keep votes confidential between people sharing a computer?
@@ -128,6 +129,9 @@ class Chit {
     matchesID(id) {
         return (this.number.compare(id) == 0);
     };
+    isSigned() {
+        return this.signedMessageText;
+    }
 };
 class PersonalChit extends Chit {
     constructor(questionID, obj = null) {
@@ -157,9 +161,7 @@ class Ballot {
         this.ballotKey = ballotKey;
 	    this.verificationMessage = '';
 	    this.results = {};
-	    var isSigned = false;
         if (savedBallotInfo) {
-            var isSigned = true;
             this.currentlySelectedResponse = savedBallotInfo.currentlySelectedResponse;
             this.voteAcknowledged = savedBallotInfo.voteAcknowledged;
             this.submittedResponse = savedBallotInfo.submittedResponse;
@@ -186,7 +188,7 @@ class Ballot {
         this.responseChits.forEach( ( chit, i) => {
             this.allChits.push(chit);
         } );
-        if (!isSigned) {
+        if (!(savedBallotInfo && this.areAllChitsSigned())) {
             this.getSignedForUser();
         }
     };
@@ -206,10 +208,21 @@ class Ballot {
         } while (bigInt.gcd(k,n).compare(bigInt.one) != 0);
         return k;
     };
+    areAllChitsSigned() {
+        var anyUnsigned = false;
+        var i;
+        for (i = 0; i < this.allChits.length; ++i) {
+            if (!this.allChits[i].isSigned()) {
+               anyUnsigned = true;
+            }
+        }
+        return !anyUnsigned;
+    }
     getSignedForUser() {
 	    this.n = gModulus;
         this.e = gPublicKey;
         this.k = Ballot.randomKforModulus(this.n);
+        this.errorCountPerSigning = 0;
         this.allChits.forEach( (chit, i) => {
 		    var blindedChitText = chit.blindedMessageText(this.n, this.k, this.e);
             this.signOneChit(chit, blindedChitText, this.theQuestion.id);
@@ -223,8 +236,19 @@ class Ballot {
             chit.acceptSignedBlindedText(response);
             this.saveToLocalStorage();
          })
-        .catch(function (error) {
-            console.log(error);
+        .catch( (error) => {
+            console.log(error.response);
+            if (!this.errorCountPerSigning) {
+                if (error.response && (error.response.status == 403)) {   // Forbidden
+                    // Why would the CTF refuse to sign? The only likely possibility is that the question closed
+                    // just as we loaded. Re-fetch the question list so that we can detect that it closed (if so.)
+                    voterApp.checkForNewQuestions();
+                }
+                else {  // TODO: test that general internet glitchyness would end up here?
+                    alert("Internet glitch? Glitch in communication with server. Please check your network and try re-loading this page.");
+                }
+            }
+            ++this.errorCountPerSigning;
         });
     };
     chitForResponse(response) {
@@ -266,15 +290,25 @@ class Ballot {
         let url = "ballot/" + this.theQuestion.id + "/vote";
         let promise = axios.post(url, payload);
         promise.then( response => this.processVoteResponse(response) )
-            .catch(function (error) {
-                console.log(error);
-                LogTrouble("vote failed to post");
-            });
+            .catch(error => this.processVoteError(error));
     };
-    processVoteResponse() {
+    processVoteResponse(response) {
         this.voteAcknowledged = true;
         this.saveToLocalStorage();
         this.verifyVote();
+    };
+    processVoteError(error) {
+        console.log(error.response);
+        console.log(error.response.status);
+        this.submittedResponse = null;
+        if (error.response.status == 410) {
+            voterApp.checkForNewQuestions();
+            alert("Unfortunately, this question was closed before you tried to vote, thus your vote was not counted.");
+        }
+        else {
+            LogTrouble("vote failed to post");
+            alert("There was some problem with submitting your vote to the CTF.");
+        }
     };
     iVoted() {
         return (this.submittedResponse != null);

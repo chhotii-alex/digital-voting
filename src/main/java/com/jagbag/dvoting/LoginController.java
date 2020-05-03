@@ -92,6 +92,9 @@ public class LoginController extends APIController {
         Map<String, String> formValue = parseForm(formData);
         String username = formValue.get("user");
         String email = formValue.get("email");
+        if (username == null && email == null) {
+            return getLoginPage();
+        }
         Voter v = null;
         if (username != null) {
             v = voterListManager.getForUsername(username);
@@ -100,7 +103,18 @@ public class LoginController extends APIController {
             v = voterListManager.getForEmail(email);
         }
         if (v == null) {
-            return getLoginPage();
+            String message = "I'm sorry, no user account with ";
+            if (username != null) {
+                message = message + String.format("the user name '%s' ", username );
+            }
+            if (username != null && email != null) {
+                message = message + "or ";
+            }
+            if (email != null) {
+                message = message + String.format("the email address '%s' ", email);
+            }
+            message = message + "exists.";
+            return ResponseEntity.ok(message);
         }
         if (voterListManager.prepareForReset(v)) {
             sendResetEmail(v);

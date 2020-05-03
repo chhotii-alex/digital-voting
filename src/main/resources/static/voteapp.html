@@ -18,6 +18,7 @@
         <div v-for="question in votableQuestions" class="boxed">
             Question {{ question.id }}.<br/>
             {{ question.text }}
+            <span v-if="question.closed" ><i>CLOSED</i></span>
             <!--
                 TODO: make buttons unfocusable when they are in effect disabled
                 TODO: 'verify all' button -->

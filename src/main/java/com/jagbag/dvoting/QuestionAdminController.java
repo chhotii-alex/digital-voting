@@ -139,7 +139,6 @@ public class QuestionAdminController extends APIController {
 
     /*
     If it has never been offered up for polling, we can delete a question.
-    TODO: expose the delete functionality in the admin's side of the client
      */
     @DeleteMapping("/questions/{quid}/delete")
     public synchronized ResponseEntity deleteQuestion(@RequestHeader HttpHeaders headers, @PathVariable long quid) {

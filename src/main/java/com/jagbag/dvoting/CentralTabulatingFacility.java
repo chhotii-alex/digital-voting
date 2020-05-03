@@ -1,6 +1,7 @@
 package com.jagbag.dvoting;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
@@ -141,8 +142,7 @@ public class CentralTabulatingFacility {
         String username = voter.getUsername();
         Question theQuestion = lookUpQuestion(quid);
         if (!theQuestion.getStatus().equals("polling")) {
-            return null; // TODO: user experience if signing chits fails; possible if Q closed just as they load
-            // TODO: what happens if you try to vote on a closed question anyway?
+            return null; // could happen if Q closed just as a client loads
         }
         // Check that a voter doesn't register more than one ballot per question.
         Map<Long, Set<String>> blindedChitsPerQuestion
@@ -169,45 +169,47 @@ public class CentralTabulatingFacility {
         return signedAsString;
     }
 
-    public synchronized void receiveVoteOnQuestion(long quid, VoteMessage vote) {
+    public synchronized HttpStatus receiveVoteOnQuestion(long quid, VoteMessage vote) {
         if (vote.meChit == null || vote.meChit.length() < 1) {
             TroubleLogger.reportTrouble("Empty me chit submitted");
-            return;
+            return HttpStatus.BAD_REQUEST;
         }
         if (vote.meChitSigned == null || vote.meChitSigned.length() < 1) {
             TroubleLogger.reportTrouble("No signature submitted for me chit");
-            return;
+            return HttpStatus.BAD_REQUEST;
         }
         if (vote.responseChit == null || vote.responseChit.length() < 1) {
             TroubleLogger.reportTrouble("Empty response chit submitted");
-            return;
+            return HttpStatus.BAD_REQUEST;
         }
         if (vote.responseChitSigned == null || vote.responseChitSigned.length() < 1) {
             TroubleLogger.reportTrouble("No signature submitted for response chit");
-            return;
+            return HttpStatus.BAD_REQUEST;
         }
         if (!confirmSignature(vote.meChit, vote.meChitSigned)) {
             TroubleLogger.reportTrouble("Invalid signature: " + vote.meChitSigned);
-            return;
+            return HttpStatus.FORBIDDEN;
         }
         if (!confirmSignature(vote.responseChit, vote.responseChitSigned)) {
             TroubleLogger.reportTrouble("Invalid signature: " + vote.responseChitSigned);
-            return;
+            return HttpStatus.FORBIDDEN;
         }
         Question theQuestion = lookUpQuestion(quid);
         if (theQuestion == null) {
             TroubleLogger.reportTrouble("Someone trying to vote on an invalid question ID: " + quid);
-            return;
+            return HttpStatus.NOT_FOUND;
         }
         if (!theQuestion.getStatus().equals("polling")) {
             TroubleLogger.reportTrouble("Someone trying to vote on question that's not open: " + theQuestion.getText());
-            return;
+            return HttpStatus.GONE;
         }
         try {
             castVote(theQuestion, vote.meChit, vote.responseChit);
+            return HttpStatus.OK;
         }
         catch (Exception ex) {
             TroubleLogger.reportTrouble(ex.getMessage());
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
     }
 
