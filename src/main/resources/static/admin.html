@@ -85,9 +85,14 @@
             <br/>
             <button class="bigbutton"
                     v-show="question.canBeDeleted()" v-on:click="question.deleteMe()">Delete</button>
-            <span v-if="question.results.length" > <b>Results:</b> </span>
-            <span v-for="(count, opt) in question.results" >
-                <i>{{ opt }} :</i>  {{ count }}
+            <span v-if="question.shouldShowResultsDetail" >
+                <b>Results:</b>
+                <span v-for="(count, opt) in question.results" >
+                    <i>{{ opt }} :</i>  {{ count }}
+                </span>
+            </span>
+            <span v-if="question.total || question.shouldShowResultsDetail" >
+                <b>Total votes counted: </b> {{ question.total }}
             </span>
         </div>
         <span v-show="showingQuestions" >

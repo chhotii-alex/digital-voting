@@ -50,6 +50,7 @@ public class Question extends SigningEntity {
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_question")
     private List<ResponseOption> possibleResponses;
+    @Transient
     protected HashMap<String, String> blindedChitByUser;
 
     protected Question() {} // Hibernate needs this

@@ -21,7 +21,7 @@
             <span v-if="question.closed" ><i>CLOSED</i></span>
             <!--
                 TODO: make buttons unfocusable when they are in effect disabled
-                TODO: 'verify all' button -->
+                 -->
             <div v-for="option in question.possibleResponses" >
                 <button v-on:click="question.ballot.setCurrentlySelectedResponse(option.text)"
                         class="choice">
@@ -40,9 +40,14 @@
                 </button>
             </div>
             <i>{{ question.ballot.verificationMessage }}</i>
-            <div v-for="(count, opt) in question.ballot.results" >
-                <b>{{ opt }} :</b> <i> {{ count }} </i>
-            </div>
+            <span v-if="question.shouldShowResultsDetail()" >
+                <div v-for="(count, opt) in question.ballot.results" >
+                    <b>{{ opt }} :</b> <i> {{ count }} </i>
+                </div>
+            </span>
+            <span v-if="question.ballot.total" >
+                <b>Total votes counted: </b> {{ question.ballot.total }}
+            </span>
         </div>
         <button v-if="isKeyInfoKnown" v-on:click="checkForNewQuestions" class="bigbutton" >
             Update Question List

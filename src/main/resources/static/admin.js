@@ -1,8 +1,10 @@
 class AdministratableQuestion extends Question {
     constructor(obj=null) {
         super();
+        this.shouldShowResultsDetail = false;
         this.setOriginalData(obj);
         this.results = {};
+        this.total = 0;
     }
     setOriginalData(obj) {
         this.original = obj;
@@ -15,7 +17,7 @@ class AdministratableQuestion extends Question {
         }
     }
     updateFrom(doingInitialization, obj) {
-        // if this is an update of a question we're alreday listing, Do not over-write changes made in this client
+        // if this is an update of a question we're already listing, Do not over-write changes made in this client
         if (doingInitialization || !this.hasDifferencesFromOriginal()) {
             this.text = obj.text;
             this.addResponseOptionsFrom(obj);
@@ -26,6 +28,9 @@ class AdministratableQuestion extends Question {
         this.closable = obj.closable;
         if (this.status === 'polling' || this.status === 'closed' ) {
             this.reportVotes();
+            if (this.status === 'closed')  {
+                this.shouldShowResultsDetail = true;
+            }
         }
     }
     addOption() {
@@ -53,6 +58,7 @@ class AdministratableQuestion extends Question {
     processVerificationData(response) {
         var report = response.data;
         this.results = {};
+        this.total = 0;
         var i;
         this.possibleResponses.forEach( (option, i) => {
             this.results[option.getText()] = 0;
@@ -67,6 +73,7 @@ class AdministratableQuestion extends Question {
             else {   // Covers the case that a response was not in the question's list of possible responses...
                 this.results[record.response] = 1;  // which shouldn't happen, as things work now, but just in case...
             }
+            ++(this.total);
         }
     }
     canDeleteOption() {

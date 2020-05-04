@@ -106,7 +106,7 @@ class VotableQuestion extends Question {
         this.id = obj.id;
         this.addResponseOptionsFrom(obj);
         this.text = obj.text;
-        this.closed = false;
+        this.closed = (obj.status == "closed");
         this.e = bigInt(obj.exponentStr);
         this.n = bigInt(obj.modulusStr);
         let ballotKey = "ballot." + this.id;
@@ -117,6 +117,9 @@ class VotableQuestion extends Question {
         return (!this.closed && this.ballot.currentlySelectedResponse
                 && (!this.ballot.submittedResponse || !this.ballot.voteAcknowledged)
                 && this.ballot.areAllChitsSigned() );
+    }
+    shouldShowResultsDetail() {
+        return this.closed;
     }
 }
 /*  TODO: How do we keep votes confidential between people sharing a computer?
@@ -206,6 +209,7 @@ class Ballot {
         this.ballotKey = ballotKey;
 	    this.verificationMessage = '';
 	    this.results = {};
+	    this.total = 0;
         if (savedBallotInfo) {
             this.currentlySelectedResponse = savedBallotInfo.currentlySelectedResponse;
             this.voteAcknowledged = savedBallotInfo.voteAcknowledged;
@@ -233,8 +237,10 @@ class Ballot {
         this.responseChits.forEach( ( chit, i) => {
             this.allChits.push(chit);
         } );
-        if (!(savedBallotInfo && this.areAllChitsSigned())) {
-            this.getSignedForUser();
+        if (!this.theQuestion.closed) {
+            if (!this.areAllChitsSigned()) {
+                this.getSignedForUser();
+            }
         }
     };
     saveToLocalStorage() {
@@ -309,11 +315,12 @@ class Ballot {
 	    return chit;
     };
     setCurrentlySelectedResponse(opt) {
-        if (!this.submittedResponse) {
+        if (!(this.submittedResponse || this.theQuestion.closed)) {
             this.currentlySelectedResponse = opt;
             this.saveToLocalStorage();
         }
         // otherwise, if this is already voted, can't change response
+        // or, if it's closed, it's fruitless to try to pick a response
     };
     classForOption(text) {
         if (text == this.currentlySelectedResponse) {
@@ -373,6 +380,7 @@ class Ballot {
         var responseFound = false;
         var report = response.data;
         this.results = {};
+        this.total = 0;
         this.theQuestion.possibleResponses.forEach( (option, i) => {
             this.results[option.getText()] = 0;
         });
@@ -387,6 +395,7 @@ class Ballot {
             else {   // Covers the case that a response was not in the question's list of possible responses...
                 this.results[record.response] = 1;  // which shouldn't happen, as things work now, but just in case...
             }
+            ++this.total;
             var voterID = record.voterChitNumber;
             if (!this.personalChit.matchesID(voterID)) { continue; }
             if (!this.iVoted()) {
@@ -502,7 +511,7 @@ var voterApp = new Vue({
                 if (!found) {
                     let url = "/questions/" + id;
                     let promise = axios.get(url);
-                    promise.then( response => this.processOldQuestion(response));
+                    promise.then( response => this.processOldQuestion(response), error => {});
                 }
             }
         },
