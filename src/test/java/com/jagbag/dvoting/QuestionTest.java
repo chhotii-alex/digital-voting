@@ -2,6 +2,7 @@ package com.jagbag.dvoting;
 
 import org.junit.jupiter.api.Test;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZoneOffset;
@@ -90,7 +91,12 @@ class QuestionTest {
         assertTrue(q1.canPost());
         assertFalse(q1.canClose());
         assertEquals(q1.getStatus(), "new");
-        q1.post();
+        try {
+            q1.post();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            fail("posting threw");
+        }
         assertFalse(q1.canEdit());
         assertFalse(q1.canDelete());
         assertFalse(q1.canPost());

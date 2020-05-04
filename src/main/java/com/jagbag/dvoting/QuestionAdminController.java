@@ -1,8 +1,10 @@
 package com.jagbag.dvoting;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import javax.persistence.*;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Handles endpoints related to managing the list of questions: creating, editing, posting, and closing questions.
@@ -10,6 +12,9 @@ import javax.persistence.*;
  */
 @RestController
 public class QuestionAdminController extends APIController {
+    @Autowired
+    private CentralTabulatingFacility ctf;
+
     /* This ONLY should be called for new questions-- questions not previously fetched from the database. */
     @PostMapping(value="questions")
     public ResponseEntity addQuestion(@RequestHeader HttpHeaders headers, @RequestBody Question q) {
@@ -49,15 +54,16 @@ public class QuestionAdminController extends APIController {
     public synchronized ResponseEntity patchQuestion(@RequestHeader HttpHeaders headers,
                                         @RequestBody Question patchQuestion, @PathVariable long quid) {
         loginManager.validateAdminUser(headers);
+        Question q = ctf.lookUpQuestion(quid);
+        if (!q.getStatus().equals("new")) {
+            // This is not supposed to happen, because client will only offer option to edit a question in the
+            // "new" status. However if we have 2 admins logged in, and one posts while the other editing...
+            throw new ForbiddenException();
+        }
         EntityManager em = emf.createEntityManager();
         try {
-            Question q = em.find(Question.class, quid);
-            if (!q.getStatus().equals("new")) {
-                // This is not supposed to happen, because client will only offer option to edit a question in the
-                // "new" status. However if we have 2 admins logged in, and one posts while the other editing...
-                throw new ForbiddenException();
-            }
             em.getTransaction().begin();
+            em.merge(q);
             q.setText(patchQuestion.getText());
             for (ResponseOption opt: q.getPossibleResponses()) {
                 em.remove(opt);
@@ -84,18 +90,23 @@ public class QuestionAdminController extends APIController {
  */
     @PatchMapping("/questions/{quid}/post")
     public synchronized ResponseEntity postQuestion(@RequestHeader HttpHeaders headers,
-                                        @RequestBody Question patchQuestion, @PathVariable long quid) {
+                                        @RequestBody Question patchQuestion, @PathVariable long quid) throws NoSuchAlgorithmException {
         loginManager.validateAdminUser(headers);
+        Question q = ctf.lookUpQuestion(quid);
+        if (!q.getStatus().equals("new")) {
+            // This is not supposed to happen, because client will only offer option to post a question in the
+            // "new" status. However if we have 2 admins logged in, and both post at the same time.
+            throw new ForbiddenException();
+        }
+        ctf.postQuestion(q);
+        return mergedQuestionUpdates(q);
+    }
+
+    public ResponseEntity mergedQuestionUpdates(Question q) {
         EntityManager em = emf.createEntityManager();
         try {
-            Question q = em.find(Question.class, quid);
-            if (!q.getStatus().equals("new")) {
-                // This is not supposed to happen, because client will only offer option to post a question in the
-                // "new" status. However if we have 2 admins logged in, and both post at the same time.
-                throw new ForbiddenException();
-            }
             em.getTransaction().begin();
-            q.post();
+            em.merge(q);
             em.getTransaction().commit();
             return new ResponseEntity(q, HttpStatus.OK);
         }
@@ -115,26 +126,14 @@ public class QuestionAdminController extends APIController {
     public synchronized ResponseEntity closeQuestion(@RequestHeader HttpHeaders headers,
                                        @RequestBody Question patchQuestion, @PathVariable long quid) {
         loginManager.validateAdminUser(headers);
-        EntityManager em = emf.createEntityManager();
-        try {
-            Question q = em.find(Question.class, quid);
-            if (!q.getStatus().equals("polling")) {
-                // This is not supposed to happen, because client will only offer option to close a question in the
-                // "polling" status. However if we have 2 admins logged in, and both act at the same time...
-                throw new ForbiddenException();
-            }
-            em.getTransaction().begin();
-            q.close();
-            em.getTransaction().commit();
-            return new ResponseEntity(q, HttpStatus.OK);
+        Question q = ctf.lookUpQuestion(quid);
+        if (!q.getStatus().equals("polling")) {
+            // This is not supposed to happen, because client will only offer option to close a question in the
+            // "polling" status. However if we have 2 admins logged in, and both act at the same time...
+            throw new ForbiddenException();
         }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            return new  ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        finally {
-            em.close();
-        }
+        ctf.closeQuestion(q);
+        return mergedQuestionUpdates(q);
     }
 
     /*
@@ -143,9 +142,9 @@ public class QuestionAdminController extends APIController {
     @DeleteMapping("/questions/{quid}/delete")
     public synchronized ResponseEntity deleteQuestion(@RequestHeader HttpHeaders headers, @PathVariable long quid) {
         loginManager.validateAdminUser(headers);
+        Question q = ctf.lookUpQuestion(quid);
         EntityManager em = emf.createEntityManager();
         try {
-            Question q = em.find(Question.class, quid);
             if (!q.getStatus().equals("new")) {
                 // This is not supposed to happen, because client will only offer option to delete a question in the
                 // "new" status. However if we have 2 admins logged in, and both act at the same time...

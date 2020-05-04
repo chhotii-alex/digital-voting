@@ -3,6 +3,8 @@ package com.jagbag.dvoting;
 import com.fasterxml.jackson.annotation.JsonGetter;
 
 import javax.persistence.*;
+import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.time.*;
 
@@ -37,7 +39,7 @@ import java.time.*;
  * closed.
  */
 @Entity
-public class Question {
+public class Question extends SigningEntity {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private long id;
@@ -48,6 +50,7 @@ public class Question {
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_question")
     private List<ResponseOption> possibleResponses;
+    protected HashMap<String, String> blindedChitByUser;
 
     protected Question() {} // Hibernate needs this
 
@@ -76,7 +79,9 @@ public class Question {
         createdWhen = java.time.LocalDateTime.now();
     }
     public java.time.LocalDateTime getCreatedWhen() { return createdWhen; }
-    public void post() {
+    public void post() throws NoSuchAlgorithmException {
+        initializeKeys();
+        blindedChitByUser = new HashMap<String, String>();
         postedWhen = java.time.LocalDateTime.now();
     }
     public void close() {
@@ -111,5 +116,33 @@ public class Question {
         else {
             return "new";
         }
+    }
+
+    /**
+     * Get the modulus for the RSA key pair used for signing me chits for sending to the client via JSON.
+     */
+    @JsonGetter("modulusStr")
+    public String getModulusString() {
+        if (rsaKeys == null) return null;
+        return getPublicKey().getModulus().toString(10);
+    }
+
+    /**
+     * Get the public key of the RSA key pair used for signing me chits for sending to the client via JSON.
+     * The public key and modulus are sent to the client, and can be shouted from the rooftops.
+     * Note the lack of any public method exposing the private key, however.
+     */
+    @JsonGetter("exponentStr")
+    public String getPublicExponentString() {
+        if (rsaKeys == null) return null;
+        return getPublicKey().getPublicExponent().toString(10);
+    }
+
+    public String getBlindedChitForUser(String username) {
+        return blindedChitByUser.get(username);
+    }
+
+    public void setBlindedChitForUser(String username, String blindedMessageText) {
+        blindedChitByUser.put(username, blindedMessageText);
     }
 }

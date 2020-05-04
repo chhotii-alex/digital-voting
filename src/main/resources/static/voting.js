@@ -107,6 +107,8 @@ class VotableQuestion extends Question {
         this.addResponseOptionsFrom(obj);
         this.text = obj.text;
         this.closed = false;
+        this.e = bigInt(obj.exponentStr);
+        this.n = bigInt(obj.modulusStr);
         let ballotKey = "ballot." + this.id;
         let savedBallotInfo = getStorageData(ballotKey);
         this.ballot = new Ballot(this, ballotKey, savedBallotInfo);
@@ -177,6 +179,9 @@ class PersonalChit extends Chit {
     getText() {
         return "me";
     };
+    getSignatureEndpoint() {
+        return "/signme";
+    }
 };
 class ResponseChit extends Chit {
     constructor(questionID, responseOption, obj = null) {
@@ -191,6 +196,9 @@ class ResponseChit extends Chit {
     getText() {
         return this.myResponse.getText();
     };
+    getSignatureEndpoint() {
+        return "/sign";
+    }
 };
 class Ballot {
     constructor(question, ballotKey, savedBallotInfo) {
@@ -256,18 +264,21 @@ class Ballot {
         return !anyUnsigned;
     }
     getSignedForUser() {
-	    this.n = gModulus;
-        this.e = gPublicKey;
-        this.k = Ballot.randomKforModulus(this.n);
         this.errorCountPerSigning = 0;
-        this.allChits.forEach( (chit, i) => {
-		    var blindedChitText = chit.blindedMessageText(this.n, this.k, this.e);
+        var k = Ballot.randomKforModulus(gModulus);
+        // Response chits are all signed with the same key
+        this.responseChits.forEach( (chit, i) => {
+		    var blindedChitText = chit.blindedMessageText(gModulus, k, gPublicKey);
             this.signOneChit(chit, blindedChitText, this.theQuestion.id);
 	    });
+	    // The me chit is signed with a key that is specific to the the question
+	    k = Ballot.randomKforModulus(this.theQuestion.n);
+	    var blindedChitText = this.personalChit.blindedMessageText(this.theQuestion.n, k, this.theQuestion.e);
+	    this.signOneChit(this.personalChit, blindedChitText, this.theQuestion.id);
 	    this.saveToLocalStorage();
     };
     signOneChit(chit, blindedChitText, quid) {
-        let url = "ballot/" + quid + "/sign";
+        let url = "ballot/" + quid + chit.getSignatureEndpoint();
         let promise = axios.post(url, { b: blindedChitText });
         promise.then( response => {
             chit.acceptSignedBlindedText(response);
@@ -465,8 +476,8 @@ var voterApp = new Vue({
             promise.then(response => this.processKeys(response), error => this.dealWithError(error));
         },
         processKeys: function(response) {
-            gPublicKey = response.data.public;
-            gModulus = response.data.modulus;
+            gPublicKey = bigInt(response.data.public);
+            gModulus = bigInt(response.data.modulus);
             this.$data.isKeyInfoKnown = true;
             this.checkForNewQuestions();
         },

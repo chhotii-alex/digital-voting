@@ -37,10 +37,7 @@ public class VotingAPIController extends APIController {
     @GetMapping("/ballots")
     public ResponseEntity<List<Question>> getOpenQuestions(@RequestHeader HttpHeaders headers) {
         loginManager.validateVotingUser(headers);
-        EntityManager em = emf.createEntityManager();
-        String hql = "select q from Question q where q.postedWhen is not null and q.closedWhen is null order by q.postedWhen";
-        List<Question> list = em.createQuery(hql).getResultList();
-        em.close();
+        List<Question> list = ctf.votableQuestionList();
         return ResponseEntity.ok(list);
     }
 
@@ -48,7 +45,18 @@ public class VotingAPIController extends APIController {
     public ResponseEntity getChitSigned(@RequestHeader HttpHeaders headers,
                                         @PathVariable long quid, @RequestBody PostPayload chit) {
         Voter v = loginManager.validateVotingUser(headers);
-        String result = ctf.signChit(chit.getB(), v, quid);
+        String result = ctf.signResponseChit(chit.getB(), v, quid);
+        if (result == null) {
+            throw new ForbiddenException();
+        }
+        return new ResponseEntity(result, HttpStatus.OK);
+    }
+
+    @PostMapping(value="ballot/{quid}/signme")
+    public ResponseEntity getMeChitSigned(@RequestHeader HttpHeaders headers,
+                                        @PathVariable long quid, @RequestBody PostPayload chit) {
+        Voter v = loginManager.validateVotingUser(headers);
+        String result = ctf.signMeChit(chit.getB(), v, quid);
         if (result == null) {
             throw new ForbiddenException();
         }
