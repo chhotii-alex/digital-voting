@@ -317,10 +317,10 @@ class Ballot {
     };
     classForOption(text) {
         if (text == this.currentlySelectedResponse) {
-            return "selected";
+            return "fa fa-check";
         }
         else {
-            return "notselected";
+            return "";
         }
     };
     vote() {

@@ -42,21 +42,13 @@
         padding: 10px;
         margin: 10px;
     }
-    button.notselected {
+    button.choice {
         border: none;
         padding: 5px;
         margin: 5px;
         font-size: 16px;
         border-radius: 0px;
-    }
-    button.selected {
-        border: none;
-        color: white;
-        background-color: MIDNIGHTBLUE;
-        padding: 5px;
-        margin: 5px;
-        font-size: 17px;
-        border-radius: 0px;
+        background-color: white;
     }
     button.borderless {
         border: none;
