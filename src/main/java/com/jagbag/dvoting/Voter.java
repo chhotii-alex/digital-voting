@@ -149,10 +149,11 @@ public class Voter {
         return code.equals(getConfirmationCode());
     }
 
-    public void confirmEmail(String code) {
+    public boolean confirmEmail(String code) {
         if (canConfirmCode(code)) {
             emailConfirmed = true;
         }
+        return emailConfirmed;
     }
 
     public void setEmailConfirmed(boolean flag) {

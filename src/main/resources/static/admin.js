@@ -269,6 +269,7 @@ var adminApp = new Vue({
         questionsById: {},
         showingQuestions: false,
         showOldQuestions: false,
+        areAnyQuestionsOld: false,
         allusers: [],
         errorText: '',
         updateTimerToken: '',
@@ -306,6 +307,7 @@ var adminApp = new Vue({
                         var closedWhen = Date.parse(obj.closedWhen);
                         var diffInMillis = now - closedWhen;
                         if (diffInMillis > 1000*60*60*24) {
+                            this.$data.areAnyQuestionsOld = true;
                             continue;
                         }
                     }

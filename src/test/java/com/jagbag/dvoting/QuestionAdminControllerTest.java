@@ -18,7 +18,7 @@ import net.minidev.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -171,5 +171,74 @@ class QuestionAdminControllerTest {
 
     @Test
     void deleteQuestion() {
+        HttpHeaders headers = setUpAndLogIn();
+
+        Question q1 = new Question("Is this a really terrible question?");
+        q1.addResponseOption(new ResponseOption("I think so?"));
+        q1.addResponseOption(new ResponseOption("no, not at all"));
+        q1.addResponseOption(new ResponseOption("molasses spice cookies"));
+        q1.addResponseOption(new ResponseOption("no comment"));
+        Integer quid = freshQuestionId(q1, headers);
+        Question savedQuestion = ctf.lookUpQuestion(quid);
+        try {
+            ResultActions ra = mockMvc.perform(delete("/questions/{quid}/delete", quid)
+                .headers(headers) )
+                .andExpect(status().isOk());
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                fail("DELETE threw");
+        }
+        savedQuestion = ctf.lookUpQuestion(quid);
+        assertNull(savedQuestion);
+
+        // test that you CANNOT delete a posted question
+        Question q2 = new Question("May I insist upon asking a terrible question?");
+        q2.addResponseOption(new ResponseOption("um"));
+        q2.addResponseOption(new ResponseOption("mu"));
+        quid = freshQuestionId(q2, headers);
+        try {
+            ResultActions ra = mockMvc.perform(patch("/questions/{quid}/post", quid)
+                    .headers(headers) )
+                    .andExpect(status().isOk());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("PATCH threw when posting");
+        }
+        savedQuestion = ctf.lookUpQuestion(quid);
+        try {
+            ResultActions ra = mockMvc.perform(delete("/questions/{quid}/delete", quid)
+                    .headers(headers) )
+                    .andExpect(status().isForbidden());
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail("DELETE threw exception");
+        }
+        savedQuestion = ctf.lookUpQuestion(quid);
+        assertNotNull(savedQuestion);
+
+        // test can you can't delete it after closing it either
+        try {
+            ResultActions ra = mockMvc.perform(patch("/questions/{quid}/close", quid)
+                    .headers(headers) )
+                    .andExpect(status().isOk());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("PATCH threw");
+        }
+        savedQuestion = ctf.lookUpQuestion(quid);
+        assertEquals(savedQuestion.getStatus(), "closed");
+        try {
+            ResultActions ra = mockMvc.perform(delete("/questions/{quid}/delete", quid)
+                    .headers(headers) )
+                    .andExpect(status().isForbidden());
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail("DELETE threw exception");
+        }
+        savedQuestion = ctf.lookUpQuestion(quid);
+        assertNotNull(savedQuestion);
     }
 }

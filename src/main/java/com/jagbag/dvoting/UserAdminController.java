@@ -113,14 +113,19 @@ public class UserAdminController extends APIController {
         }
     }
 
-    /* TODO: expose this functionality in the client
-    TODO: if it's an administrator, not the user themself, don't allow deleting a voting-priv user */
-    @DeleteMapping("/voters/{username}")
+    /* TODO: expose this functionality in the client, both landing page and admin's list*/
+    @DeleteMapping("/voters/{username}/delete")
     public synchronized ResponseEntity deleteVoter(@RequestHeader HttpHeaders headers, @PathVariable String username) {
-        loginManager.validateCanAdministerUser(headers, username);
+        Voter user = loginManager.validateCanAdministerUser(headers, username);
         Voter v = voterListManager.getForUsername(username);
         if (v == null) {
             return new ResponseEntity(HttpStatus.NOT_FOUND);
+        }
+        if (v.isAllowedToVote()) {
+            if (v.getId() != user.getId()) {
+                // if it's an administrator, not the user themself, don't allow deleting a voting-priv user
+                throw new ForbiddenException();
+            }
         }
         voterListManager.removeVoter(v);
         return new ResponseEntity(HttpStatus.OK);

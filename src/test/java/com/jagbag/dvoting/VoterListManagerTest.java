@@ -39,6 +39,52 @@ class VoterListManagerTest {
     }
 
     @Test
+    void addVoter() {
+        String email = "alice@xyz.com";
+        String name = "Alice";
+        String username = "alice";
+        Voter v = new Voter(name, username, email);
+        voterListManager.addVoter(v, "!@#$%^&*(");
+        Voter v2 = voterListManager.getForEmail(email);
+        assertNotNull(v2);
+        assertEquals(name, v2.getName());
+        assertEquals(username, v2.getUsername());
+        assertFalse(v2.isActiveAccount());
+    }
+
+    @Test
+    void removeVoter() {
+        String email = "bob@xyz.com";
+        String name = "Bob";
+        String username = "bob";
+        Voter v = new Voter(name, username, email);
+        voterListManager.addVoter(v, "!@#$%^&*(");
+        assertNotNull(voterListManager.getForUsername("bob"));
+        voterListManager.removeVoter(v);
+        assertNull(voterListManager.getForUsername("bob"));
+    }
+
+    @Test
+    void confirmEmail() {
+        String email = "carol@xyz.com";
+        String name = "Carol";
+        String username = "carol";
+        assertNull(voterListManager.getForUsername(username));
+        Voter v = new Voter(name, username, email);
+        voterListManager.addVoter(v, "!@#$%^&*(");
+        v = voterListManager.getForUsername(username);
+        assertFalse(v.isActiveAccount());
+        String phonyEmailTemplate = "##USERNAME##:message:##CODE##";
+        String phonyEmailText = v.processEmailText(phonyEmailTemplate);
+        String[] fields = phonyEmailText.split(":");
+        String confirmationCode = fields[2];
+        assertEquals(fields[0], username);
+        voterListManager.confirmEmail(v, confirmationCode);
+        v = voterListManager.getForUsername(username);
+        assertTrue(v.isActiveAccount());
+    }
+
+    @Test
     void getForUsername() {
     }
 
@@ -46,15 +92,4 @@ class VoterListManagerTest {
     void voters() {
     }
 
-    @Test
-    void addVoter() {
-    }
-
-    @Test
-    void removeVoter() {
-    }
-
-    @Test
-    void confirmEmail() {
-    }
 }

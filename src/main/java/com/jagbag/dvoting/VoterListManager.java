@@ -113,6 +113,7 @@ public class VoterListManager {
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
         try {
+            v = em.merge(v);
             em.remove(v);
             em.getTransaction().commit();
         }
@@ -138,6 +139,7 @@ public class VoterListManager {
                 success = true;
             }
             catch (Exception ex) {
+                System.out.println("Threw exception when committing changes wrought by confirmEmail");
                 ex.printStackTrace();
                 em.getTransaction().rollback();
             }

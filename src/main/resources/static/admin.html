@@ -97,8 +97,10 @@
         </div>
         <span v-show="showingQuestions" >
             <button  class="bigbutton"  v-on:click="newQuestion" >Create New Question</button>
-            <input type="checkbox" id="showOld" v-model="showOldQuestions" />
-            <label for="showOld">Show Old Closed Questions </label>
+            <span v-if="areAnyQuestionsOld" >
+                <input type="checkbox" id="showOld" v-model="showOldQuestions" />
+                <label for="showOld">Show Old Closed Questions </label>
+            </span>
         </span>
     </div>
 </div>

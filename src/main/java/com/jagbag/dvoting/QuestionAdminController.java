@@ -143,25 +143,18 @@ public class QuestionAdminController extends APIController {
         loginManager.validateAdminUser(headers);
         Question q = ctf.lookUpQuestion(quid);
         EntityManager em = emf.createEntityManager();
-        try {
-            if (!q.getStatus().equals("new")) {
-                // This is not supposed to happen, because client will only offer option to delete a question in the
-                // "new" status. However if we have 2 admins logged in, and both act at the same time...
-                throw new ForbiddenException();
-            }
-            em.getTransaction().begin();
-            em.remove(q);
-            // TODO: is deletion cascaded to the response options?
-            em.getTransaction().commit();
-            return new ResponseEntity(q, HttpStatus.OK);
+        if (!q.getStatus().equals("new")) {
+            // This is not supposed to happen, because client will only offer option to delete a question in the
+            // "new" status. However if we have 2 admins logged in, and both act at the same time...
+            throw new ForbiddenException();
         }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            return new  ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        finally {
-            em.close();
-        }
+        em.getTransaction().begin();
+        q = em.merge(q);
+        em.remove(q);
+        // TODO: is deletion cascaded to the response options?
+        em.getTransaction().commit();
+        em.close();
+        return new ResponseEntity(HttpStatus.OK);
     }
 
 }
