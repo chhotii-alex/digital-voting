@@ -20,6 +20,7 @@ public class LoginManager {
     /** See {@link VoterListManager } */
     @Autowired protected VoterListManager voterListManager;
     private Map<String, String> tokens = new HashMap<String, String>();
+    private Map<String, Long> backoffPerLogin = new HashMap<String, Long>();
 
     public boolean validateLoginCredentials(String username, String password) {
         Voter v = voterListManager.getForUsername(username);
@@ -35,7 +36,8 @@ public class LoginManager {
                 return true;
             }
             else {
-                // TODO: exponential backoff, to mitigate dictionary attack
+                // exponential backoff, to mitigate dictionary attack
+                Thread.currentThread().sleep(incrementBackoffForUser(username));
                 return false;
             }
         }
@@ -45,6 +47,17 @@ public class LoginManager {
             ex.printStackTrace();
             return false;
         }
+    }
+
+    protected synchronized void clearBackoffForUser(String username) {
+        backoffPerLogin.put(username, 50L);
+    }
+
+    protected synchronized long incrementBackoffForUser(String username) {
+        long delay = backoffPerLogin.computeIfAbsent(username, (String u) -> {return 50L;});
+        long newDelay = (long)(delay * (ThreadLocalRandom.current().nextDouble()+1) );
+        backoffPerLogin.put(username, newDelay);
+        return delay;
     }
 
     public synchronized void createTokenForUser(String username) {
