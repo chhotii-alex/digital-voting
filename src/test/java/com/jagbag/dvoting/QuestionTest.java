@@ -64,13 +64,13 @@ class QuestionTest {
     @Test
     void numberOfAllowedChits() {
         Question q1 = new Question("What snacks should we have?");
-        assertEquals(q1.numberOfAllowedChits(), 1);
+        assertEquals(q1.numberOfAllowedChits(), 0);
         q1.addResponseOption(new ResponseOption("oatmeal cookies"));
-        assertEquals(q1.numberOfAllowedChits(), 2);
+        assertEquals(q1.numberOfAllowedChits(), 1);
         q1.addResponseOption(new ResponseOption("cranberry orange bread"));
-        assertEquals(q1.numberOfAllowedChits(), 3);
+        assertEquals(q1.numberOfAllowedChits(), 2);
         q1.addResponseOption(new ResponseOption("molasses spice cookies"));
-        assertEquals(q1.numberOfAllowedChits(), 4);
+        assertEquals(q1.numberOfAllowedChits(), 3);
     }
 
     @Test

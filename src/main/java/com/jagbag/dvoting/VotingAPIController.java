@@ -4,7 +4,6 @@ import net.minidev.json.JSONObject;  // TODO: are we linking an extraneous depen
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import javax.persistence.EntityManager;
 import java.util.List;
 
 /**

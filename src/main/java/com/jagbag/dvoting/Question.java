@@ -73,7 +73,7 @@ public class Question extends SigningEntity {
     public List<ResponseOption> getPossibleResponses() { return possibleResponses; }
     public int numberOfPossibleResponses() { return possibleResponses.size(); }
     public int numberOfAllowedChits() {
-        return numberOfPossibleResponses()+1;
+        return numberOfPossibleResponses();
     }
 
     protected void setCreateDateTime() {

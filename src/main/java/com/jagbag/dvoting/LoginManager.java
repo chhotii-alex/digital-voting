@@ -60,12 +60,12 @@ public class LoginManager {
         return delay;
     }
 
-    public synchronized void createTokenForUser(String username) {
+    protected synchronized void createTokenForUser(String username) {
         String newToken = (new BigInteger(24, ThreadLocalRandom.current())).toString(36);
         tokens.put(username, newToken);
     }
 
-    public synchronized boolean validateTokenForUser(String token, String username) {
+    protected synchronized boolean validateTokenForUser(String token, String username) {
         return (token.equals(tokenForUser(username)));
     }
 

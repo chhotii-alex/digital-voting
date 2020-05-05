@@ -63,9 +63,10 @@ public class QuestionAdminController extends APIController {
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();
-            em.merge(q);
+            q = em.merge(q);
             q.setText(patchQuestion.getText());
             for (ResponseOption opt: q.getPossibleResponses()) {
+                opt = em.merge(opt);
                 em.remove(opt);
             }
             q.clearResponseOptions();
@@ -89,8 +90,7 @@ public class QuestionAdminController extends APIController {
     If it's not yet posted, we can post it (open it up for polling)
  */
     @PatchMapping("/questions/{quid}/post")
-    public synchronized ResponseEntity postQuestion(@RequestHeader HttpHeaders headers,
-                                        @RequestBody Question patchQuestion, @PathVariable long quid) throws NoSuchAlgorithmException {
+    public synchronized ResponseEntity postQuestion(@RequestHeader HttpHeaders headers, @PathVariable long quid) throws NoSuchAlgorithmException {
         loginManager.validateAdminUser(headers);
         Question q = ctf.lookUpQuestion(quid);
         if (!q.getStatus().equals("new")) {
@@ -106,7 +106,7 @@ public class QuestionAdminController extends APIController {
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();
-            em.merge(q);
+            q = em.merge(q);
             em.getTransaction().commit();
             return new ResponseEntity(q, HttpStatus.OK);
         }
@@ -123,8 +123,7 @@ public class QuestionAdminController extends APIController {
     If it is posted, we can close it (disallow any additional voting)
      */
     @PatchMapping("/questions/{quid}/close")
-    public synchronized ResponseEntity closeQuestion(@RequestHeader HttpHeaders headers,
-                                       @RequestBody Question patchQuestion, @PathVariable long quid) {
+    public synchronized ResponseEntity closeQuestion(@RequestHeader HttpHeaders headers, @PathVariable long quid) {
         loginManager.validateAdminUser(headers);
         Question q = ctf.lookUpQuestion(quid);
         if (!q.getStatus().equals("polling")) {

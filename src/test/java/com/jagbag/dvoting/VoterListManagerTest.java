@@ -3,10 +3,12 @@ package com.jagbag.dvoting;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class VoterListManagerTest {
 
     @Autowired
@@ -20,6 +22,15 @@ class VoterListManagerTest {
     void initialize() {
         try {
             voterListManager.initialize();
+            // This set of tests runs off a test database that is fresh each time.
+            // So initialize() should create the admin user.
+            Voter v = voterListManager.getForUsername("admin");
+            if (v == null) {
+                fail("Initialize didn't create admin user");
+            }
+            if (!v.isAdmin()) {
+                fail("Didn't create a known usr with admin priv");
+            }
         }
         catch (Exception e) {
             e.printStackTrace();
