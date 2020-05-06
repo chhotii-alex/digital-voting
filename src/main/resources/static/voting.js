@@ -1,6 +1,4 @@
 // global variables
-gPublicKey = null;
-gModulus = null;
 gTrouble = false;
 
 function LogTrouble(message) {
@@ -324,10 +322,10 @@ class Ballot {
     };
     classForOption(text) {
         if (text == this.currentlySelectedResponse) {
-            return "fa fa-check";
+            return "fa fa-dot-circle-o";
         }
         else {
-            return "";
+            return "fa fa-circle-o";
         }
     };
     vote() {
@@ -478,22 +476,37 @@ var voterApp = new Vue({
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;
             LogTrouble(this.$data.errorText);
+            alert(error);
         },
         fetchCTFKeys: function() {
-            let url = "ballots/keys/";
-            let promise = axios.get(url);
-            promise.then(response => this.processKeys(response), error => this.dealWithError(error));
+            if (gModulus && gPublicKey) {
+                this.$data.isKeyInfoKnown = true;
+                this.getQuestions();
+            }
+            else {
+                let url = "ballots/keys/";
+                let promise = axios.get(url);
+                promise.then(response => this.processKeys(response), error => this.dealWithError(error));
+            }
         },
         processKeys: function(response) {
             gPublicKey = bigInt(response.data.public);
             gModulus = bigInt(response.data.modulus);
             this.$data.isKeyInfoKnown = true;
-            this.checkForNewQuestions();
+            this.getQuestions();
+        },
+        getQuestions: function() {
+            if (gPageLoadQuestions) {  // even an empty array is truthy
+                this.processOpenQuestions(gPageLoadQuestions);
+            }
+            else {
+                this.checkForNewQuestions();
+            }
         },
         checkForNewQuestions: function() {  // from voter's POV: questions that they can vote on now
             let url = "ballots/";
             let aPromise = axios.get(url);
-            aPromise.then(response => this.processOpenQuestions(response), error => this.dealWithError(error));
+            aPromise.then(response => this.processOpenQuestions(response.data), error => this.dealWithError(error));
         },
         startShowingOldQuestions: function() {
             this.$data.showOldQuestions = true;
@@ -520,13 +533,13 @@ var voterApp = new Vue({
             var q = new VotableQuestion(obj);
             this.$data.votableQuestions.push(q);
         },
-        processOpenQuestions: function(response) {
+        processOpenQuestions: function(questions) {
             var i;
             var j;
             for (j = 0; j < this.$data.votableQuestions.length; ++j) {
                 var found = false;
-                for (i = 0; i < response.data.length; ++i) {
-                    if (response.data[i].id === this.$data.votableQuestions[j].id) {
+                for (i = 0; i < questions.length; ++i) {
+                    if (questions[i].id === this.$data.votableQuestions[j].id) {
                         found = true; break;
                     }
                 }
@@ -534,8 +547,8 @@ var voterApp = new Vue({
                     this.$data.votableQuestions[j].closed = true;
                 }
             }
-            for (i = 0; i < response.data.length; ++i) {
-                var obj = response.data[i];
+            for (i = 0; i < questions.length; ++i) {
+                var obj = questions[i];
                 var found = false;
                 for (j = 0; j < this.$data.votableQuestions.length; ++j) {
                     if (obj.id ===  this.$data.votableQuestions[j].id) {
@@ -544,7 +557,7 @@ var voterApp = new Vue({
                 }
                 if (!found) {
                     /* Only process newly opened questions and instantiate instances of VotableQuestion after
-                        the query for the CTF's key info has returned the numbers! A VotableQuestion's Ballot's
+                        we know the CTF's key info! A VotableQuestion's Ballot's
                         Chits can only choose its random numbers, and get signed, after we have those numbers.
                     */
                     if (this.isKeyInfoKnown) {

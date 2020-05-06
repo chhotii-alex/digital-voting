@@ -1,6 +1,7 @@
 package com.jagbag.dvoting;
 
-import net.minidev.json.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -334,14 +335,15 @@ public class CentralTabulatingFacility extends SigningEntity {
         return new ArrayList(postedQuestions.values());
     }
 
-    public String fillInVotingInfo(String pageText) {
+    public String fillInVotingInfo(String pageText) throws JsonProcessingException {
         pageText = pageText.replaceAll("##EXPONENT##", this.getPublicExponent().toString(10));
         pageText = pageText.replaceAll("##MODULUS##", this.getModulus().toString(10));
 
- /*       JSONObject obj = new JSONObject();
-        obj.put("questions", votableQuestionList());
-        String questionString = obj.toString();
-        pageText = pageText.replaceAll("##QUESTIONS##", questionString);  */
+        String questionString = new ObjectMapper().writeValueAsString(votableQuestionList());
+//        JSONObject obj = new JSONObject();
+    //    obj.put("questions", votableQuestionList());
+    //    obj.toString();
+        pageText = pageText.replaceAll("##QUESTIONS##", questionString);
 
         return pageText;
     }

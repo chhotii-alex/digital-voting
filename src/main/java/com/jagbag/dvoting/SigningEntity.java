@@ -35,7 +35,7 @@ upon starting.
         return pair;
     }
 
-    protected void initializeKeys() throws NoSuchAlgorithmException {
+    void initializeKeys() throws NoSuchAlgorithmException {
         rsaKeys = generateKeyPair();
     }
     protected RSAPublicKey getPublicKey() {
@@ -80,6 +80,11 @@ upon starting.
         return new BigInteger(s, 36);
     }
 
+    /**
+     * Signs the blinded text: encrypts the big number with the private key
+     * @param blindedMessageText A big integer, encoded as string in base 36
+     * @return Another big integer, encoded as a string in base 36
+     */
     public String signText(String blindedMessageText) {
         if (rsaKeys == null) {
             throw new RuntimeException("Asked to sign when not  ready to sign.");
@@ -93,7 +98,7 @@ upon starting.
         return signedAsString;
     }
 
-    protected boolean confirmSignature(String chit, String signedChit) {
+    public boolean confirmSignature(String chit, String signedChit) {
         if (rsaKeys == null) {
             throw new RuntimeException("How can we be confirming signatures when not even ready to sign?");
         }

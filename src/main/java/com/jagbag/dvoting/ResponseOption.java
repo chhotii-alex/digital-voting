@@ -1,6 +1,6 @@
 package com.jagbag.dvoting;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 
@@ -20,6 +20,7 @@ public class ResponseOption {
     @GeneratedValue(strategy=GenerationType.AUTO)
     private long id;
     private String text;
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "fk_question")
     private Question question;

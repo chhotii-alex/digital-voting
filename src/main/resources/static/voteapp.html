@@ -12,12 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
 <body>
 <link rel="stylesheet" type="text/css" href="voting.css" >
-<!--
-##MODULUS##
-##EXPONENT##
-##QUESTIONS##
--->
-
+<script>
+gPublicKey = new bigInt("##EXPONENT##");
+gModulus = new bigInt("##MODULUS##");
+gPageLoadQuestions = ##QUESTIONS##;
+</script>
 <div id="voterapp">
     <form action="logout">
         Welcome, {{ username }}
@@ -46,7 +45,7 @@
             </div>
             <div v-if="question.ballot.iVoted()">
                 <button v-on:click="question.ballot.verifyVote()" class="bigbutton">
-                    Verify Now
+                    Verify
                 </button>
             </div>
             <i>{{ question.ballot.verificationMessage }}</i>
@@ -55,18 +54,11 @@
                     <b>{{ opt }} :</b> <i> {{ count }} </i>
                 </div>
             </span>
+            <!-- Wex thinks this is just confusing and that the folks don't need to see how many voted so far:
             <span v-if="question.ballot.total" >
                 <b>Total votes counted: </b> {{ question.ballot.total }}
-            </span>
+            </span>  -->
         </div>
-        <button v-if="isKeyInfoKnown" v-on:click="checkForNewQuestions" class="bigbutton" >
-            <!-- TODO: Alan sez: don't need this button; users can refresh page. Make sure questions are sure to be fetched even if fetching key is laggy
-            -->
-            Refresh Question List
-        </button>
-        <button v-if="anyQuestionsVoted" v-on:click="verifyAll" class="bigbutton" >
-            Verify All Now
-        </button>
         <button v-if="!showOldQuestions" v-on:click="startShowingOldQuestions" class="bigbutton" >
             Show Old Questions
         </button>
