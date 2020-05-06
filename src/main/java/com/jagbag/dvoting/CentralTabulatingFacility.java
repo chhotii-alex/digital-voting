@@ -1,5 +1,6 @@
 package com.jagbag.dvoting;
 
+import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -331,5 +332,17 @@ public class CentralTabulatingFacility extends SigningEntity {
 
     public List<Question> votableQuestionList() {
         return new ArrayList(postedQuestions.values());
+    }
+
+    public String fillInVotingInfo(String pageText) {
+        pageText = pageText.replaceAll("##EXPONENT##", this.getPublicExponent().toString(10));
+        pageText = pageText.replaceAll("##MODULUS##", this.getModulus().toString(10));
+
+ /*       JSONObject obj = new JSONObject();
+        obj.put("questions", votableQuestionList());
+        String questionString = obj.toString();
+        pageText = pageText.replaceAll("##QUESTIONS##", questionString);  */
+
+        return pageText;
     }
 }

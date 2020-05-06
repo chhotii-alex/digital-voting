@@ -12,8 +12,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
 <body>
 <link rel="stylesheet" type="text/css" href="voting.css" >
+<!--
+##MODULUS##
+##EXPONENT##
+##QUESTIONS##
+-->
+
 <div id="voterapp">
-    Hello, {{ username }} <p/>
+    <form action="logout">
+        Welcome, {{ username }}
+        <input type="submit" value="Log Out" class="loginbutton" >
+    </form>
+    <p/>
     <div v-show="allowedToVote" >
         <div v-for="question in votableQuestions" class="boxed">
             Question {{ question.id }}.<br/>
@@ -50,7 +60,9 @@
             </span>
         </div>
         <button v-if="isKeyInfoKnown" v-on:click="checkForNewQuestions" class="bigbutton" >
-            Update Question List
+            <!-- TODO: Alan sez: don't need this button; users can refresh page. Make sure questions are sure to be fetched even if fetching key is laggy
+            -->
+            Refresh Question List
         </button>
         <button v-if="anyQuestionsVoted" v-on:click="verifyAll" class="bigbutton" >
             Verify All Now
@@ -60,7 +72,6 @@
         </button>
     </div>
 </div>
-<form action="logout"><input type="submit" value="Log Out" class="loginbutton" ></form>
 <script src="voting.js"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 package com.jagbag.dvoting;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import javax.persistence.*;
 import java.math.BigInteger;
@@ -49,7 +50,7 @@ public class Question extends SigningEntity {
     private java.time.LocalDateTime closedWhen;
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_question")
-    private List<ResponseOption> possibleResponses;
+    public List<ResponseOption> possibleResponses;
     @Transient
     protected HashMap<String, String> blindedChitByUser;
 

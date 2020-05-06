@@ -38,14 +38,17 @@ public class VoterListManager {
 
     protected synchronized void createAdminUserIfNeeded() throws UnsupportedEncodingException, NoSuchAlgorithmException {
         if (countAdminUsers() < 1) {
-            Voter adminUser = new Voter("admin", "admin", "admin@localhost");
+            Voter adminUser = getForUsername("admin");
+            if (adminUser == null) {
+                adminUser = new Voter("admin", "admin", "admin@localhost");
+                adminUser.setPassword("changeme!");
+                adminUser.setEmailConfirmed(true);
+            }
             adminUser.setAdmin(true);
-            adminUser.setPassword("changeme!");
-            adminUser.setEmailConfirmed(true);
             EntityManager em = emf.createEntityManager();
             em.getTransaction().begin();
             try {
-                em.persist(adminUser);
+                em.merge(adminUser);
                 em.getTransaction().commit();
             }
             catch (Exception ex) {

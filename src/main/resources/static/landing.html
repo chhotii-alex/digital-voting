@@ -28,12 +28,16 @@ function checkNewPasswords(e) {
 }
 </script>
 <div id="landingapp">
-    Welcome, {{ username }} <p/>
+    <form action="logout">
+        Welcome, {{ username }}
+        <input type="submit" value="Log Out" class="loginbutton" >
+    </form>
+    <p/>
     <div v-show="admin">
-        <a href="admin.html" target="_blank"  >Open the Administration Page</a>
+        <a href="admin.html"  >Open the Administration Page</a>
     </div>
     <div v-show="allowedToVote" >
-        <a href="voteapp.html" target="_blank" >Open the Voting Page</a>
+        <a href="voteapp.html" >Open the Voting Page</a>
     </div>
     {{ name }}
     {{ email }}  <!-- displays the EFFECTIVE email address here (which may be oldEMail if not confirmed) -->
@@ -69,7 +73,6 @@ function checkNewPasswords(e) {
     </form>
 </div>
 
-<form action="logout"><input type="submit" value="Log Out" class="loginbutton" ></form>
 <script src="landing.js"></script>
 <script >
 var input;

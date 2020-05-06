@@ -202,8 +202,8 @@ class AdministratableQuestion extends Question {
         if (!this.canBeDeleted()) { return; }
         let prompt = "Delete question?   " + this.text;
         let response = confirm(prompt);
-            adminApp.removeQuestion(this);
         if (response) {
+            adminApp.removeQuestion(this);
             if (this.original) {
                 let url = "questions/" + this.original.id + "/delete";
                 let promise = axios.delete(url, this);
@@ -215,6 +215,15 @@ class AdministratableQuestion extends Question {
                 });
            }
         }
+    }
+    isClosed() {
+        return (this.status == 'closed');
+    }
+    isPolling() {
+        return (this.status == 'polling');
+    }
+    isNew() {
+        return (this.status == 'new');
     }
 }
 class Voter {
@@ -268,8 +277,11 @@ var adminApp = new Vue({
         allquestions: [],
         questionsById: {},
         showingQuestions: false,
+        questionRefreshTime: '',
         showOldQuestions: false,
         areAnyQuestionsOld: false,
+        showingUsers: false,
+        userRefreshTime: '',
         allusers: [],
         errorText: '',
         updateTimerToken: '',
@@ -285,6 +297,17 @@ var adminApp = new Vue({
             this.fetchQuestions();  // re-fetch when the filter changes
         },
     },
+    computed: {
+        closedQuestions: function() {
+            return this.$data.allquestions.filter( q => q.isClosed());
+        },
+        pollingQuestions: function() {
+            return this.$data.allquestions.filter( q => q.isPolling());
+        },
+        newQuestions: function() {
+            return this.$data.allquestions.filter( q => q.isNew());
+        },
+    },
     methods: {
         processUserInfo: function(response) {
             this.$data.name= response.data.name;
@@ -297,6 +320,7 @@ var adminApp = new Vue({
         },
         processQuestionList: function(response) {
             var now = Date.now();
+            this.$data.questionRefreshTime = new Date();;
             this.$data.showingQuestions = true;
             var i;
             var newArray = [];
@@ -361,23 +385,14 @@ var adminApp = new Vue({
             var index = this.$data.allquestions.findIndex( (element) => element == q );
             this.$data.allquestions.splice(index, 1);
         },
-        deleteOption: function(sender) {
-            let fields = sender.target.id.split(":");
-            var i;
-            for (i = 0; i < this.$data.allquestions.length; ++i) {
-                let q = this.$data.allquestions[i];
-                if (q.id == fields[0]) {
-                    q.deleteOption(fields[1]);
-                    break;
-                }
-            }
-        },
         fetchUsers: function() {
+            this.$data.showingUsers = true;
             let url = "voters/";
             let promise = axios.get(url);
             promise.then(response => this.processUserList(response), error => this.dealWithError(error));
         },
         processUserList: function(response) {
+            this.$data.userRefreshTime = new Date();
             console.log(response.data);
             this.$data.allusers = [];
             var i;

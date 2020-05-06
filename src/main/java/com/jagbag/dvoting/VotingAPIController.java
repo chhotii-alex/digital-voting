@@ -2,6 +2,8 @@ package com.jagbag.dvoting;
 
 import net.minidev.json.JSONObject;  // TODO: are we linking an extraneous dependency to make this work?
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -21,6 +23,22 @@ import java.util.List;
 @RestController
 public class VotingAPIController extends APIController {
     @Autowired private CentralTabulatingFacility ctf;
+    @Autowired private LoginController loginController;
+
+    /** File containing the voting page */
+    @Value("classpath:static/voteapp.html")
+    protected Resource votingPageTemplate;
+
+    @GetMapping("/voting")
+    public ResponseEntity getVotingPage(@RequestHeader HttpHeaders headers) throws Exception {
+        Voter v = loginManager.validateBasicUser(headers);
+        if (!v.isAllowedToVote()) {
+            return loginController.getLanding(headers);
+        }
+        String pageText = textFromResource(votingPageTemplate);
+        pageText = ctf.fillInVotingInfo(pageText);
+        return ResponseEntity.ok().body(pageText);
+    }
 
     /* return public key and modulus */
     @GetMapping("/ballots/keys")

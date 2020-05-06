@@ -52,6 +52,14 @@
     }
     button.borderless {
         border: none;
+        font-size: 16px;
+    }
+    .wide20 {
+        width: 20px;
+    }
+    .fineprint {
+        font-size: 10px;
+        font-style: italic;
     }
     .bigbutton {
       background-color: #e7e7e7;
@@ -65,11 +73,19 @@
       margin: 4px 2px;
       cursor: pointer;
     }
+    .bigbutton:hover {
+      font-size: 17px;
+      background-color: #e0e0e0;
+    }
     .bigbutton:disabled {
-      background-color: #f4f4f4;
-        color: white;
+      font-size: 16px;
+      cursor: not-allowed;
+      opacity: 0.4;
     }
 
+th, td {
+  border-bottom: 1px solid #ddd;
+}
 
 
     /* Table-like layout (without tables) (can be made media reactive) */

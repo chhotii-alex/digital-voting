@@ -1,5 +1,7 @@
 package com.jagbag.dvoting;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import javax.persistence.*;
 
 /**
