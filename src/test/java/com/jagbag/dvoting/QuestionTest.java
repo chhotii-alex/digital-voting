@@ -74,6 +74,16 @@ class QuestionTest {
     }
 
     @Test
+    void setType() {
+        Question q1 = new Question("What snacks should we have?");
+        q1.addResponseOption(new ResponseOption("oatmeal cookies"));
+        q1.addResponseOption(new ResponseOption("cranberry orange bread"));
+        q1.addResponseOption(new ResponseOption("molasses spice cookies"));
+        q1.setType(Question.CountingType.RANKED_CHOICE);
+        assertEquals(Question.CountingType.RANKED_CHOICE, q1.getType());
+    }
+
+    @Test
     void setCreateDateTime() {
         Question q1 = new Question("What snacks should we have?");
         java.time.LocalDateTime now = java.time.LocalDateTime.now();

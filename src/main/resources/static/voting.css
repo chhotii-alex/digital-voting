@@ -83,6 +83,10 @@
       opacity: 0.4;
     }
 
+    .roomybottom {
+        padding: 5px 5px 100px 5px;
+    }
+
 th, td {
   border-bottom: 1px solid #ddd;
 }

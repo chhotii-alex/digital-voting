@@ -26,13 +26,15 @@ public class Vote {
     private java.time.LocalDateTime receivedWhen;
     private String voterChitNumber;
     private String responseChitNumber;
+    private int ranking;
 
     protected Vote() {} // Hibernate needs this
-    public Vote(Question question, String response, String voterChitNumber, String responseChitNumber) {
+    public Vote(Question question, String response, String voterChitNumber, String responseChitNumber, int ranking) {
         this.question = question;
         this.response = response;
         this.voterChitNumber = voterChitNumber;
         this.responseChitNumber = responseChitNumber;
+        this.ranking = ranking;
         this.receivedWhen = java.time.LocalDateTime.now();
     }
 
@@ -42,4 +44,5 @@ public class Vote {
     public java.time.LocalDateTime getReceivedWhen() { return receivedWhen; }
     public String getVoterChitNumber() { return voterChitNumber; }
     public String getResponseChitNumber() { return responseChitNumber; }
+    public int getRanking() { return ranking; }
 }

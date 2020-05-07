@@ -87,7 +87,7 @@ public class VotingAPIController extends APIController {
         signed authenticates it.
          */
         HttpStatus result = ctf.receiveVoteOnQuestion(quid, vote);
-        return new ResponseEntity(result);
+        return new ResponseEntity(vote.ranking, result);
     }
 
     @GetMapping(value="ballot/{quid}/verify")

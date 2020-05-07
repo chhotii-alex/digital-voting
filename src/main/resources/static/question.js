@@ -12,7 +12,7 @@ class ResponseOption {
         this.text = this.getText();
     }
     getUniqueLabel() {
-        return `${ this.questionID } ${ this.getText() }`;
+        return `${ this.questionID }_${ this.getText() }`;
     };
 }
 class Question {
@@ -20,6 +20,7 @@ class Question {
         this.original = null;
         this.text = text;
         this.possibleResponses = [];
+        this.type = "SINGLE";
     };
     addResponseOption(opt) {
         opt.questionID = this.id;
@@ -34,4 +35,36 @@ class Question {
              this.addResponseOption(r);
          }
     }
+    responseOptionForText(text) {
+        var j;
+        for (j = 0; j < this.possibleResponses.length; ++j) {
+            if (this.possibleResponses[j].getText() == text) {
+                return this.possibleResponses[j];
+            }
+        }
+    }
+    typeDescription() {
+        if (this.type == "SINGLE") {
+            return "Single";
+        }
+        else if (this.type == "MULTIPLE") {
+            return "Multiple";
+        }
+        else if (this.type == "RANKED_CHOICE") {
+            return "Ranked";
+        }
+        else {
+            console.log("invalid type: ");
+            console.log(this);
+        }
+    }
+    isSingleChoice() {
+        return (this.type == "SINGLE");
+    }
+    isRankedChoice() {
+        return (this.type == "RANKED_CHOICE");
+    }
 }
+Question.CountingTypeSingle = "SINGLE";
+Question.CountingTypeMultiple = "MULTIPLE";
+Question.CountingTypeRanked = "RANKED_CHOICE";

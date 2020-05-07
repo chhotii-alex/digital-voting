@@ -28,15 +28,37 @@ gPageLoadQuestions = ##QUESTIONS##;
             Question {{ question.id }}.<br/>
             {{ question.text }}
             <span v-if="question.closed" ><i>CLOSED</i></span>
-            <!--
-                TODO: make buttons unfocusable when they are in effect disabled
-                 -->
-            <div v-for="option in question.possibleResponses" >
-                <button v-on:click="question.ballot.setCurrentlySelectedResponse(option.text)"
-                        class="choice">
-                    <i :class="question.ballot.classForOption(option.text)"></i>
-                    {{ option.text }}
-                </button>
+            <div v-if="question.isSingleChoice()" >
+                <!-- TODO: make buttons unfocusable when they are in effect disabled -->
+                <div v-for="option in question.possibleResponses" >
+                    <button v-on:click="question.ballot.setCurrentlySelectedResponse(option.text)"
+                            class="choice">
+                        <i :class="question.ballot.classForOption(option.text)"></i>
+                        {{ option.text }}
+                    </button>
+                </div>
+            </div>
+            <div v-if="question.isRankedChoice()" >
+                <div class="row" >
+                    <span class="col-4 boxed roomybottom" v-on:dragover="allowDrop" v-on:drop="drop" >
+                        Options you are choosing, in ranked order:<br/>
+                        <div v-for="(option, index) in question.ballot.rankedChoices" class="boxed"
+                             v-on:dragstart="drag" draggable="true"
+                             v-on:dragover="allowDrop" v-on:drop="dropInsert"
+                             v-on:keyup="keyOnSelected"
+                             tabindex="0" :id="option.getUniqueLabel()" >
+                            {{ (index+1) }}. {{ option.text }}
+                        </div>
+                    </span>
+                    <span class="col-5 boxed" v-on:dragover="allowDrop" v-on:drop="dropDelete" >
+                        As yet unselected options: <br/>
+                        <div v-for="option in question.ballot.unrankedChoices" class="boxed"
+                             v-on:dragstart="drag" v-on:keyup="keyOnUnselected" v-on:click="clickUnselected"
+                             draggable="true" tabindex="0" :id="option.getUniqueLabel()">
+                            {{ option.text }}
+                        </div>
+                    </span>
+                </div>
             </div>
             <div v-if="question.canVote()">
                 <button v-on:click="question.ballot.vote()" class="bigbutton">
@@ -54,10 +76,6 @@ gPageLoadQuestions = ##QUESTIONS##;
                     <b>{{ opt }} :</b> <i> {{ count }} </i>
                 </div>
             </span>
-            <!-- Wex thinks this is just confusing and that the folks don't need to see how many voted so far:
-            <span v-if="question.ballot.total" >
-                <b>Total votes counted: </b> {{ question.ballot.total }}
-            </span>  -->
         </div>
         <button v-if="!showOldQuestions" v-on:click="startShowingOldQuestions" class="bigbutton" >
             Show Old Questions

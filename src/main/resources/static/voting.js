@@ -104,16 +104,22 @@ class VotableQuestion extends Question {
         this.id = obj.id;
         this.addResponseOptionsFrom(obj);
         this.text = obj.text;
+        this.type = obj.type;
         this.closed = (obj.status == "closed");
         this.e = bigInt(obj.exponentStr);
         this.n = bigInt(obj.modulusStr);
         let ballotKey = "ballot." + this.id;
         let savedBallotInfo = getStorageData(ballotKey);
-        this.ballot = new Ballot(this, ballotKey, savedBallotInfo);
+        if (this.type == Question.CountingTypeSingle) {
+            this.ballot = new SingleChoiceBallot(this, ballotKey, savedBallotInfo);
+        }
+        else if (this.type == Question.CountingTypeRanked) {
+            this.ballot = new RankedChoiceBallot(this, ballotKey, savedBallotInfo);
+        }
     }
     canVote() {
-        return (!this.closed && this.ballot.currentlySelectedResponse
-                && (!this.ballot.submittedResponse || !this.ballot.voteAcknowledged)
+        return (!this.closed && this.ballot.hasResponse()
+                && (!this.ballot.iVoted() || !this.ballot.voteAcknowledged)
                 && this.ballot.areAllChitsSigned() );
     }
     shouldShowResultsDetail() {
@@ -207,28 +213,11 @@ class Ballot {
         this.ballotKey = ballotKey;
 	    this.verificationMessage = '';
 	    this.results = {};
-	    this.total = 0;
         if (savedBallotInfo) {
-            this.currentlySelectedResponse = savedBallotInfo.currentlySelectedResponse;
-            this.voteAcknowledged = savedBallotInfo.voteAcknowledged;
-            this.submittedResponse = savedBallotInfo.submittedResponse;
-            this.personalChit = new PersonalChit(question.id, savedBallotInfo.personalChit);
-            this.responseChits = [];
-            savedBallotInfo.responseChits.forEach( (obj, i) => {
-                var responseChit = new ResponseChit(question.id, obj.myResponse, obj);
-                this.responseChits.push(responseChit);
-            } );
+            this.initFromSavedBallot(savedBallotInfo);
         }
         else {
-    	    this.currentlySelectedResponse = null;
-	        this.voteAcknowledged = false;
-            this.submittedResponse = null;  // this is only given a value when vote submitted
-            this.personalChit = new PersonalChit(question.id);
-            this.responseChits = [];
-            question.possibleResponses.forEach( (option, i) => {
-		        var responseChit = new ResponseChit(question.id, option);
-                    this.responseChits.push(responseChit);
-            } );
+            this.init();
         }
         this.allChits = [];
         this.allChits.push(this.personalChit);
@@ -241,15 +230,34 @@ class Ballot {
             }
         }
     };
-    saveToLocalStorage() {
+    init() {
+	        this.voteAcknowledged = false;
+            this.personalChit = new PersonalChit(this.theQuestion.id);
+            this.responseChits = [];
+            this.theQuestion.possibleResponses.forEach( (option, i) => {
+		        var responseChit = new ResponseChit(this.theQuestion.id, option);
+                    this.responseChits.push(responseChit);
+            } );
+    };
+    initFromSavedBallot(savedBallotInfo) {
+            this.voteAcknowledged = savedBallotInfo.voteAcknowledged;
+            this.personalChit = new PersonalChit(this.theQuestion.id, savedBallotInfo.personalChit);
+            this.responseChits = [];
+            savedBallotInfo.responseChits.forEach( (obj, i) => {
+                var responseChit = new ResponseChit(this.theQuestion.id, obj.myResponse, obj);
+                this.responseChits.push(responseChit);
+            } );
+    };
+    makeSavedBallotObj() {
         var savedBallotInfo = {};
-        savedBallotInfo.currentlySelectedResponse = this.currentlySelectedResponse;
         savedBallotInfo.voteAcknowledged = this.voteAcknowledged;
-        savedBallotInfo.submittedResponse = this.submittedResponse;
         savedBallotInfo.personalChit = this.personalChit;
         savedBallotInfo.responseChits = this.responseChits;
-        setStorageData(this.ballotKey, savedBallotInfo);
-    }
+        return savedBallotInfo;
+    };
+    saveToLocalStorage() {
+        setStorageData(this.ballotKey, this.makeSavedBallotObj());
+    };
     static randomKforModulus(n) {
         var k;
         do {
@@ -312,6 +320,53 @@ class Ballot {
 	    });
 	    return chit;
     };
+    voteConfirmingPrompt() {
+        return "voteConfirmingPrompt() not implemented in this Ballot class";
+    }
+    vote() {
+        let prompt = this.voteConfirmingPrompt();
+        if (!confirm(prompt)) { return; }
+        this.submitVote();
+    };
+    submitVote() {
+        alert("I don't yet know how to submit a vote for a " + this.theQuestion.typeDescription());
+    };
+    iVoted() {   // MUST OVERRIDE
+        return false;
+    };
+    verifyVote() {
+        let url = "ballot/" + this.theQuestion.id + "/verify";
+        let promise = axios.get(url);
+        promise.then( response => this.processVerificationData(response) )
+            .catch( error => LogTrouble(error) );
+    }
+    processVerificationData(response) {
+        console.log("Implement processVerificationData() for " + this.theQuestion.typeDescription());
+    };
+};
+class SingleChoiceBallot extends Ballot {
+    constructor(question, ballotKey, savedBallotInfo) {
+        super(question, ballotKey, savedBallotInfo);
+    };
+    initFromSavedBallot(savedBallotInfo) {
+        super.initFromSavedBallot(savedBallotInfo);
+        this.currentlySelectedResponse = savedBallotInfo.currentlySelectedResponse;
+        this.submittedResponse = savedBallotInfo.submittedResponse;
+    };
+    init() {
+        super.init();
+    	this.currentlySelectedResponse = null;
+        this.submittedResponse = null;  // this is only given a value when vote submitted
+    };
+    makeSavedBallotObj() {
+        var savedBallotInfo = super.makeSavedBallotObj();
+        savedBallotInfo.currentlySelectedResponse = this.currentlySelectedResponse;
+        savedBallotInfo.submittedResponse = this.submittedResponse;
+        return savedBallotInfo;
+    };
+    hasResponse() {
+        return this.currentlySelectedResponse;
+    };
     setCurrentlySelectedResponse(opt) {
         if (!(this.submittedResponse || this.theQuestion.closed)) {
             this.currentlySelectedResponse = opt;
@@ -328,10 +383,8 @@ class Ballot {
             return "fa fa-circle-o";
         }
     };
-    vote() {
-        let prompt = "Do you want to vote " + this.currentlySelectedResponse + " on the question " + this.theQuestion.text;
-        if (!confirm(prompt)) { return; }
-        this.submitVote();
+    voteConfirmingPrompt() {
+        return "Do you want to vote " + this.currentlySelectedResponse + " on the question " + this.theQuestion.text;
     };
     submitVote() {
         this.submittedResponse = this.currentlySelectedResponse;
@@ -339,7 +392,8 @@ class Ballot {
         let payload = { meChit: this.personalChit.getMessageText(),
                     meChitSigned: this.personalChit.signedMessageText,
                     responseChit: responseChit.getMessageText(),
-                    responseChitSigned: responseChit.signedMessageText };
+                    responseChitSigned: responseChit.signedMessageText,
+                     ranking: 0 };
         let url = "ballot/" + this.theQuestion.id + "/vote";
         let promise = axios.post(url, payload);
         promise.then( response => this.processVoteResponse(response) )
@@ -363,22 +417,15 @@ class Ballot {
             alert("There was some problem with submitting your vote to the CTF.");
         }
     };
-    iVoted() {
+    i() {
         return (this.submittedResponse != null);
     };
-    verifyVote() {
-        let url = "ballot/" + this.theQuestion.id + "/verify";
-        let promise = axios.get(url);
-        promise.then( response => this.processVerificationData(response) )
-            .catch( error => LogTrouble(error) );
-    }
     processVerificationData(response) {
         var responseChit = this.chitForResponse(this.submittedResponse);
         this.verificationMessage = '';
         var responseFound = false;
         var report = response.data;
         this.results = {};
-        this.total = 0;
         this.theQuestion.possibleResponses.forEach( (option, i) => {
             this.results[option.getText()] = 0;
         });
@@ -393,7 +440,6 @@ class Ballot {
             else {   // Covers the case that a response was not in the question's list of possible responses...
                 this.results[record.response] = 1;  // which shouldn't happen, as things work now, but just in case...
             }
-            ++this.total;
             var voterID = record.voterChitNumber;
             if (!this.personalChit.matchesID(voterID)) { continue; }
             if (!this.iVoted()) {
@@ -431,8 +477,247 @@ class Ballot {
 	        this.verificationMessage = "Verification of vote failed.";
             LogTrouble(this.verificationMessage);
 	    }
+	};
+}
+class RankedChoiceBallot extends Ballot {
+    constructor(question, ballotKey, savedBallotInfo) {
+        super(question, ballotKey, savedBallotInfo);
+        this.acks = {}; // acknowledgements received from server upon receiving each ranking in the vote
+        this.voteSubmissionAttempted = false;
     };
-};
+    initFromSavedBallot(savedBallotInfo) {
+        super.initFromSavedBallot(savedBallotInfo);
+        var j;
+    	this.rankedChoices = [];
+        for (j = 0; j < savedBallotInfo.rankedChoices.length; ++j) {
+            var obj = savedBallotInfo.rankedChoices[j];
+            this.rankedChoices.push(this.theQuestion.responseOptionForText(obj.text));
+        }
+    	this.unrankedChoices = [];
+        for (j = 0; j < savedBallotInfo.unrankedChoices.length; ++j) {
+            var obj = savedBallotInfo.unrankedChoices[j];
+            this.unrankedChoices.push(this.theQuestion.responseOptionForText(obj.text));
+        }
+        this.acks = savedBallotInfo.acks;
+        this.voteSubmissionAttempted = savedBallotInfo.voteSubmissionAttempted;
+    };
+    init() {
+        super.init();
+    	this.rankedChoices = [];
+    	this.unrankedChoices = [];
+    	var j;
+    	for (j = 0; j < this.theQuestion.possibleResponses.length; ++j) {
+    	    this.unrankedChoices.push(this.theQuestion.possibleResponses[j]);
+    	}
+        this.acks = {};
+    };
+    makeSavedBallotObj() {
+        var savedBallotInfo = super.makeSavedBallotObj();
+        savedBallotInfo.rankedChoices = this.rankedChoices;
+        savedBallotInfo.unrankedChoices = this.unrankedChoices;
+        savedBallotInfo.acks = this.acks;
+        savedBallotInfo.voteSubmissionAttempted = this.voteSubmissionAttempted;
+        return savedBallotInfo;
+    };
+    hasResponse() {
+        return this.rankedChoices.length;
+    };
+    voteConfirmingPrompt() {
+        var str = "Do you want to vote for this ranking:\n";
+        var j;
+        for (j = 0; j < this.rankedChoices.length; ++j) {
+            str = str + (j+1) + ". " +  this.rankedChoices[j].getText() + "\n";
+        }
+        str = str + " on the question " + this.theQuestion.text;
+        return str;
+    };
+    submitVote() {
+        var j;
+        this.voteSubmissionAttempted = true;
+        for (j = 0; j < this.rankedChoices.length; ++j) {
+            var choice = this.rankedChoices[j];
+            var responseChit = this.chitForResponse(choice.getText());
+            let payload = { meChit: this.personalChit.getMessageText(),
+                    meChitSigned: this.personalChit.signedMessageText,
+                    responseChit: responseChit.getMessageText(),
+                    responseChitSigned: responseChit.signedMessageText,
+                     ranking: j };
+            let url = "ballot/" + this.theQuestion.id + "/vote";
+            let promise = axios.post(url, payload);
+            promise.then( response => this.processVoteResponse(response) )
+                .catch(error => this.processVoteError(error));
+        }
+    };
+    processVoteResponse(response) {
+        console.log(response.data);
+        this.acks[response.data] = response.status;
+        if (this.allVoteRanksAcknowledged()) {
+            this.voteAcknowledged = true;
+            this.saveToLocalStorage();
+            this.verifyVote();
+        }
+    };
+    iVoted() {
+        return this.voteSubmissionAttempted && this.allVoteRanksAcknowledged();
+    };
+    allVoteRanksAcknowledged() {
+        return (Object.keys(this.acks).length == this.rankedChoices.length);
+    };
+    processVerificationData(response) {
+        var responseChits = [];
+        var responsesFound = [];
+        var j;
+        for (j = 0; j < this.rankedChoices.length; ++j) {
+            var choice = this.rankedChoices[j];
+            var responseChit = this.chitForResponse(choice.getText());
+            responseChits.push(responseChit);
+            responsesFound.push(false);
+        }
+        this.verificationMessage = '';
+        var report = response.data;
+        console.log(report);
+        var i;
+        for (i = 0; i < report.length; ++i) {
+	        var record = report[i];
+		    var questionID = record.question.id;
+            if (questionID != this.theQuestion.id) { continue; }
+            var voterID = record.voterChitNumber;
+            if (!this.personalChit.matchesID(voterID)) { continue; }
+            if (!this.iVoted()) {
+		            this.verificationMessage = "The CTF claims I voted, and I don't remember voting!";
+		            LogTrouble(this.verificationMessage);
+                    return;
+            }
+            else {
+		            var responseID = record.responseChitNumber;
+		            var ranking = record.ranking;
+		            if (ranking >= this.rankedChoices.length) {
+		                this.verificationMessage = "The CTF reports more responses on this question than I submitted!";
+		                LogTrouble(this.verificationMessage);
+		            }
+		            if (!responseChits[ranking].matchesID(responseID)) {
+			            this.verificationMessage = "The CTF reports an invalid number for my response!";
+    		            LogTrouble(this.verificationMessage);
+			            return;
+		            }
+		            var responseInReport = record['response'];
+		            if (responseInReport == this.rankedChoices[ranking]) {
+			            responsesFound[ranking] = true;
+		            }
+                    else {
+                        this.verificationMessage = "The CTF claims I voted differently than I remember!";
+    		            LogTrouble(this.verificationMessage);
+                        return;
+                    }
+            }
+	    }
+	    if (this.voteSubmissionAttempted) {
+    	    if (responsesFound.every((item) => item)) {
+    	        this.verificationMessage = 'Verified!';
+	        }
+	        else {
+	            this.verificationMessage = 'Not all items in ranking verified.';
+                LogTrouble(this.verificationMessage);
+	        }
+	    }
+	};
+    addChoice(optionText) {
+        var j;
+        for (j = 0; j < this.unrankedChoices.length; ++j) {
+            if (this.unrankedChoices[j].text == optionText) {
+                this.rankedChoices.push(this.unrankedChoices[j]);
+                this.unrankedChoices.splice(j, 1);
+                return;
+            }
+        }
+    };
+    insertChoiceAt(optionText, index) {
+        --index;
+        if (index < 0) { index = 0; }
+        if (index > this.rankedChoices.length) { index = this.rankedChoices.length; }
+        var j;
+        for (j = 0; j < this.unrankedChoices.length; ++j) {
+            if (this.unrankedChoices[j].text == optionText) {
+                this.rankedChoices.splice(index, 0, this.unrankedChoices[j]);
+                this.unrankedChoices.splice(j, 1);
+                return;
+            }
+        }
+    };
+    moveRankingUp(optionText) {
+        var j;
+        for (j = 1; j < this.rankedChoices.length; ++j) {
+            if (this.rankedChoices[j].text == optionText) {
+                var option = this.rankedChoices[j];
+                this.rankedChoices.splice(j, 1);
+                this.rankedChoices.splice(j-1, 0, option);
+                return;
+            }
+        }
+    };
+    moveRankingDown(optionText) {
+        var j;
+        for (j = 0; (j+1) < this.rankedChoices.length; ++j) {
+            if (this.rankedChoices[j].text == optionText) {
+                var option = this.rankedChoices[j];
+                this.rankedChoices.splice(j, 1);
+                this.rankedChoices.splice(j+1, 0, option);
+                return;
+            }
+        }
+    };
+    deleteRankedChoice(optionText) {
+        var option = null;
+        var optionIndex = 0;
+        var j;
+        for (j = 0; j < this.rankedChoices.length; ++j) {
+            if (this.rankedChoices[j].text == optionText) {
+                option = this.rankedChoices[j];
+                optionIndex = j;
+            }
+        }
+        if (!option) { return; }
+        this.rankedChoices.splice(optionIndex, 1);
+        this.unrankedChoices.push(option);
+    };
+    insertChoiceBefore(insertedOptionText, displacedOptionText) {
+        if (insertedOptionText == displacedOptionText) { return; }
+        var displacedOption = null;
+        var displacedOptionIndex = 0;
+        var insertedOption = null;
+        var insertedOptionIndex = 0;  // its orignal index (before the reordering)
+        var j;
+        for (j = 0; j < this.rankedChoices.length; ++j) {
+            if (this.rankedChoices[j].text == displacedOptionText) {
+                displacedOption = this.rankedChoices[j];
+                displacedOptionIndex = j;
+            }
+        }
+        for (j = 0; j < this.rankedChoices.length; ++j) {
+            if (this.rankedChoices[j].text == insertedOptionText) {
+                insertedOption = this.rankedChoices[j];
+                insertedOptionIndex = j;
+            }
+        }
+        if (insertedOption) {  // we are rearranging within the list of ranked choices
+            this.rankedChoices.splice(displacedOptionIndex, 0, insertedOption);
+            this.rankedChoices.splice(
+                (displacedOptionIndex<insertedOptionIndex)?(insertedOptionIndex+1):insertedOptionIndex , 1);
+        }
+        else {  // inserted an unranked in at a specific place
+            for (j = 0; j < this.unrankedChoices.length; ++j) {
+                if (this.unrankedChoices[j].text == insertedOptionText) {
+                    insertedOption = this.unrankedChoices[j];
+                    insertedOptionIndex = j;
+                }
+            }
+            if (insertedOption) {
+                this.rankedChoices.splice(displacedOptionIndex, 0, insertedOption);
+                this.unrankedChoices.splice(insertedOptionIndex, 1);
+            }
+        }
+    }
+}
 var voterApp = new Vue({
     el: '#voterapp',
     data: {
@@ -580,6 +865,97 @@ var voterApp = new Vue({
                 this.$data.updateTimerToken = '';
             }
             this.$data.updateTimerToken = setInterval( () => this.verifyAll(), 2*60*1000);
+        },
+        questionForId: function(id) {
+            var j;
+            for (j = 0; j < this.$data.votableQuestions.length; ++j) {
+                 if (id ==  this.$data.votableQuestions[j].id) {
+                     return this.$data.votableQuestions[j];
+                 }
+            }
+            return null;
+        },
+        // Methods for handling choosing and re-ordering ranked choice:
+        drag: function(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        },
+        allowDrop: function(ev) {
+             ev.preventDefault();
+        },
+        drop: function(ev) {
+            ev.preventDefault();
+            let itemToMoveId = ev.dataTransfer.getData("text");
+            let fields = itemToMoveId.split('_', 2);
+            let q = this.questionForId(fields[0]);
+            q.ballot.addChoice(fields[1]);   // only works for ranking
+        },
+        dropInsert: function(ev) {
+            ev.preventDefault();
+            let itemToMoveId = ev.dataTransfer.getData("text");
+            var fields = itemToMoveId.split('_', 2);
+            let quid1 = fields[0];
+            let insertedOption = fields[1];
+            let q = this.questionForId(quid1);
+            let targetId = ev.target.id;
+            fields = targetId.split('_', 2);
+            let quid2 = fields[0];
+            let displacedOption = fields[1];
+            if (quid1 != quid2) { // Can't drag a response onto a different question!!!
+                return;
+            }
+            q.ballot.insertChoiceBefore(insertedOption, displacedOption);
+        },
+        dropDelete: function(ev) {
+            ev.preventDefault();
+            let itemToMoveId = ev.dataTransfer.getData("text");
+            this.deleteWithId(itemToMoveId);
+        },
+        deleteWithId: function(itemToMoveId) {
+            let fields = itemToMoveId.split('_', 2);
+            let quid1 = fields[0];
+            let removedOption = fields[1];
+            let q = this.questionForId(quid1);
+            q.ballot.deleteRankedChoice(removedOption);
+        },
+        keyOnUnselected: function(ev) {
+            let key = ev.key;
+            let targetId = ev.target.id;
+            let fields = targetId.split('_', 2);
+            let quid1 = fields[0];
+            let optionText = fields[1];
+            let q = this.questionForId(quid1);
+            if (key == "ArrowLeft") {
+                q.ballot.addChoice(optionText);
+            }
+            else if (!isNaN(key)) {
+                q.ballot.insertChoiceAt(optionText, key);
+            }
+        },
+        keyOnSelected: function(ev) {
+            let key = ev.key;
+            let targetId = ev.target.id;
+            let fields = targetId.split('_', 2);
+            let quid1 = fields[0];
+            let optionText = fields[1];
+            let q = this.questionForId(quid1);
+            if (key == "Backspace") {
+                this.deleteWithId(targetId);
+            }
+            else if (key == "ArrowUp") {
+                q.ballot.moveRankingUp(optionText);
+            }
+            else if (key == "ArrowDown") {
+                q.ballot.moveRankingDown(optionText);
+            }
+            else if (key == "ArrowRight") {
+                this.deleteWithId(targetId);
+            }
+        },
+        clickUnselected: function(ev) {
+            let itemToMoveId = ev.target.id;
+            let fields = itemToMoveId.split('_', 2);
+            let q = this.questionForId(fields[0]);
+            q.ballot.addChoice(fields[1]);   // only works for ranking
         }
     },
 });

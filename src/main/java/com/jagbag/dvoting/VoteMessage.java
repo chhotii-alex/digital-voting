@@ -12,4 +12,6 @@ public class VoteMessage {
     public String responseChit;
     /** version of responseChit signed by the CTF */
     public String responseChitSigned;
+    /** ranking of this option on this voter's ballot (0-based count) (always 0 for SINGLE-choice) */
+    public int ranking;
 }

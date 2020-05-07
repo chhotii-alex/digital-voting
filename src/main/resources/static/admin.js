@@ -4,7 +4,7 @@ class AdministratableQuestion extends Question {
         this.shouldShowResultsDetail = false;
         this.setOriginalData(obj);
         this.results = {};
-        this.total = 0;
+        this.numVotersResponded = 0;
     }
     setOriginalData(obj) {
         this.original = obj;
@@ -20,6 +20,7 @@ class AdministratableQuestion extends Question {
         // if this is an update of a question we're already listing, Do not over-write changes made in this client
         if (doingInitialization || !this.hasDifferencesFromOriginal()) {
             this.text = obj.text;
+            this.type = obj.type;
             this.addResponseOptionsFrom(obj);
         }
         this.status = obj.status;
@@ -57,23 +58,28 @@ class AdministratableQuestion extends Question {
     }
     processVerificationData(response) {
         var report = response.data;
-        this.results = {};
-        this.total = 0;
-        var i;
-        this.possibleResponses.forEach( (option, i) => {
-            this.results[option.getText()] = 0;
-        });
-        for (i = 0; i < report.length; ++i) {
-	        var record = report[i];
-		    var questionID = record.question.id;
-            if (questionID != this.id) { continue; }
-            if (this.results[record.response]) {
-                this.results[record.response] += 1;
+        if (this.isSingleChoice()) {
+            this.results = {};
+            this.numVotersResponded = 0;
+            var i;
+            this.possibleResponses.forEach( (option, i) => {
+                this.results[option.getText()] = 0;
+            });
+            for (i = 0; i < report.length; ++i) {
+	            var record = report[i];
+		        var questionID = record.question.id;
+                if (questionID != this.id) { continue; }
+                if (this.results[record.response]) {
+                    this.results[record.response] += 1;
+                }
+                else {   // Covers the case that a response was not in the question's list of possible responses...
+                    this.results[record.response] = 1;  // which shouldn't happen, as things work now, but just in case...
+                }
+                ++(this.numVotersResponded);
             }
-            else {   // Covers the case that a response was not in the question's list of possible responses...
-                this.results[record.response] = 1;  // which shouldn't happen, as things work now, but just in case...
-            }
-            ++(this.total);
+        }
+        else if (this.isRankedChoice()) {
+            tabulateRankedChoiceResults(this, report);
         }
     }
     canDeleteOption() {
@@ -89,6 +95,7 @@ class AdministratableQuestion extends Question {
     }
     hasDifferencesFromOriginal() {
         if (this.original.text != this.text) { return true; }
+        if (this.original.type != this.type) { return true; }
         if (this.possibleResponses.length != this.original.possibleResponses.length) { return true; }
         var i;
         for (i = 0; i < this.possibleResponses.length; ++i) {
@@ -320,7 +327,7 @@ var adminApp = new Vue({
         },
         processQuestionList: function(response) {
             var now = Date.now();
-            this.$data.questionRefreshTime = new Date();;
+            this.$data.questionRefreshTime = new Date();
             this.$data.showingQuestions = true;
             var i;
             var newArray = [];
@@ -370,7 +377,7 @@ var adminApp = new Vue({
             }
             this.$data.updateTimerToken = setInterval( () => this.fetchQuestions(), 30*1000);
         },
-        newQuestion: function(text=null) {
+        newQuestionSingle: function(text=null) {
             let item = new AdministratableQuestion();
             if ((typeof text) == "string" ) {
                 item.text = text;
@@ -378,6 +385,15 @@ var adminApp = new Vue({
             item.addResponseOption(new ResponseOption("yes"));
             item.addResponseOption(new ResponseOption("no"));
             item.addResponseOption(new ResponseOption("abstain"));
+            this.$data.allquestions.push(item);
+            return item;
+        },
+        newQuestionRanked: function(text=null) {
+            let item = new AdministratableQuestion();
+            item.type = Question.CountingTypeRanked;
+            if ((typeof text) == "string" ) {
+                item.text = text;
+            }
             this.$data.allquestions.push(item);
             return item;
         },

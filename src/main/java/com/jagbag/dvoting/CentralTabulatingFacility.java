@@ -234,6 +234,10 @@ public class CentralTabulatingFacility extends SigningEntity {
             TroubleLogger.reportTrouble("Someone trying to vote on question that's not open: " + theQuestion.getText());
             return HttpStatus.GONE;
         }
+        if (!theQuestion.acceptsResponseRank(vote.ranking)) {
+            TroubleLogger.reportTrouble("Someone trying to submit too many responses for one question");
+            return HttpStatus.FORBIDDEN;
+        }
         if (!theQuestion.confirmSignature(vote.meChit, vote.meChitSigned)) {
             TroubleLogger.reportTrouble("Invalid signature: " + vote.meChitSigned);
             return HttpStatus.FORBIDDEN;
@@ -243,7 +247,7 @@ public class CentralTabulatingFacility extends SigningEntity {
             return HttpStatus.FORBIDDEN;
         }
         try {
-            castVote(theQuestion, vote.meChit, vote.responseChit);
+            castVote(theQuestion, vote.meChit, vote.responseChit, vote.ranking);
             return HttpStatus.OK;
         }
         catch (Exception ex) {
@@ -252,7 +256,7 @@ public class CentralTabulatingFacility extends SigningEntity {
         }
     }
 
-    private synchronized void castVote(Question q, String voterIDChit, String responseChit) throws Exception {
+    private synchronized void castVote(Question q, String voterIDChit, String responseChit, int ranking) throws Exception {
         long quid = q.getId();
         String response = null;
         String voterChitNumber = null;
@@ -279,10 +283,11 @@ public class CentralTabulatingFacility extends SigningEntity {
             throw new Exception("Malformed response chit " + responseChit);
         }
         EntityManager em = emf.createEntityManager();
-        String hql = "select v from Vote v where v.question = :q and v.voterChitNumber = :voterChitNumber";
+        String hql = "select v from Vote v where v.question = :q and v.voterChitNumber = :voterChitNumber and v.ranking = :ranking";
         Query query= em.createQuery(hql);
         query.setParameter("q", q);
         query.setParameter("voterChitNumber", voterChitNumber);
+        query.setParameter("ranking", ranking);
         List<Vote> list = query.getResultList();
         Vote v = null;
         if (list.size() > 0) {
@@ -290,12 +295,12 @@ public class CentralTabulatingFacility extends SigningEntity {
             em.close();
             if (!v.getResponseChitNumber().equals(responseChitNumber) || !v.getResponse().equals(response)) {
                 // Voting twice on the same question (with different choices) is an error.
-                throw new Exception(String.format("Contradictory votes from %s on question %d. %s, %s", voterIDChit, quid, v.getResponse(), responseChit));
+                throw new Exception(String.format("Contradictory votes from %s on question %d, rank %d. %s, %s", voterIDChit, quid, ranking, v.getResponse(), responseChit));
             }
             // otherwise, same message received twice-- that's fine!
         }
         else {
-            v = new Vote(q, response, voterChitNumber, responseChitNumber);
+            v = new Vote(q, response, voterChitNumber, responseChitNumber, ranking);
             em.getTransaction().begin();
             try {
                 em.persist(v);
@@ -340,9 +345,6 @@ public class CentralTabulatingFacility extends SigningEntity {
         pageText = pageText.replaceAll("##MODULUS##", this.getModulus().toString(10));
 
         String questionString = new ObjectMapper().writeValueAsString(votableQuestionList());
-//        JSONObject obj = new JSONObject();
-    //    obj.put("questions", votableQuestionList());
-    //    obj.toString();
         pageText = pageText.replaceAll("##QUESTIONS##", questionString);
 
         return pageText;
