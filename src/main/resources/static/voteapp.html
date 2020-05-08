@@ -39,7 +39,21 @@ gPageLoadQuestions = ##QUESTIONS##;
                 </div>
             </div>
             <div v-if="question.isRankedChoice()" >
-                <div class="row" >
+                <div class="row" v-if="!question.ballot.canEditResponses()">
+                    <span class="col-4 boxed"  >
+                        Chosen options, in ranked order:<br/>
+                        <div v-for="(option, index) in question.ballot.rankedChoices" class="boxed" >
+                            {{ (index+1) }}. {{ option.text }}
+                        </div>
+                    </span>
+                    <span class="col-5 boxed"  >
+                        Unselected options: <br/>
+                        <div v-for="option in question.ballot.unrankedChoices" class="boxed" >
+                            {{ option.text }}
+                        </div>
+                    </span>
+                </div>
+                <div class="row" v-if="question.ballot.canEditResponses()">
                     <span class="col-4 boxed roomybottom" v-on:dragover="allowDrop" v-on:drop="drop" >
                         Options you are choosing, in ranked order:<br/>
                         <div v-for="(option, index) in question.ballot.rankedChoices" class="boxed"

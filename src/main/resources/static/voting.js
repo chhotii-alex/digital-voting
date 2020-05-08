@@ -417,7 +417,7 @@ class SingleChoiceBallot extends Ballot {
             alert("There was some problem with submitting your vote to the CTF.");
         }
     };
-    i() {
+    iVoted() {
         return (this.submittedResponse != null);
     };
     processVerificationData(response) {
@@ -482,8 +482,6 @@ class SingleChoiceBallot extends Ballot {
 class RankedChoiceBallot extends Ballot {
     constructor(question, ballotKey, savedBallotInfo) {
         super(question, ballotKey, savedBallotInfo);
-        this.acks = {}; // acknowledgements received from server upon receiving each ranking in the vote
-        this.voteSubmissionAttempted = false;
     };
     initFromSavedBallot(savedBallotInfo) {
         super.initFromSavedBallot(savedBallotInfo);
@@ -509,7 +507,8 @@ class RankedChoiceBallot extends Ballot {
     	for (j = 0; j < this.theQuestion.possibleResponses.length; ++j) {
     	    this.unrankedChoices.push(this.theQuestion.possibleResponses[j]);
     	}
-        this.acks = {};
+        this.acks = {}; // acknowledgements received from server upon receiving each ranking in the vote
+        this.voteSubmissionAttempted = false;
     };
     makeSavedBallotObj() {
         var savedBallotInfo = super.makeSavedBallotObj();
@@ -549,7 +548,6 @@ class RankedChoiceBallot extends Ballot {
         }
     };
     processVoteResponse(response) {
-        console.log(response.data);
         this.acks[response.data] = response.status;
         if (this.allVoteRanksAcknowledged()) {
             this.voteAcknowledged = true;
@@ -558,7 +556,10 @@ class RankedChoiceBallot extends Ballot {
         }
     };
     iVoted() {
-        return this.voteSubmissionAttempted && this.allVoteRanksAcknowledged();
+        return this.voteSubmissionAttempted;
+    };
+    canEditResponses() {
+        return !(this.iVoted() || this.theQuestion.closed);
     };
     allVoteRanksAcknowledged() {
         return (Object.keys(this.acks).length == this.rankedChoices.length);
