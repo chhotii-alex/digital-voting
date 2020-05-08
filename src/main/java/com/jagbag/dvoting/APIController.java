@@ -41,9 +41,7 @@ public class APIController {
      * @return a String containing the file's contents
      * */
     protected String textFromResource(Resource myResource) throws IOException {
-        File resource = myResource.getFile();
-        Path path = resource.toPath();
-        String text =  new String(Files.readAllBytes(path));
+        String text = new String(myResource.getInputStream().readAllBytes());
         return text;
     }
 
