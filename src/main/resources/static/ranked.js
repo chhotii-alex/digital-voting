@@ -15,7 +15,7 @@ function tabulateRankedChoiceResults(question, report) {
     var totalVotersResponding = respondingVoters.length;
     for (j = 0; j < totalVotersResponding; ++j) {
         var meID = respondingVoters[j];
-        perVoterResponses[meID].sort( (a,b) => { a.ranking - b.ranking; });
+        perVoterResponses[meID].sort( (a,b) => a.ranking-b.ranking );
     }
     var victor = null;
     if (totalVotersResponding) {
@@ -43,7 +43,8 @@ function tabulateRankedChoiceResults(question, report) {
                 var candidate = candidatesWithNonZeroVotes[j];
                 roundResults.push({name: candidate, votes: perCandidateTotals[candidate]});
             }
-            roundResults.sort( (a,b) => { b.votes - a.votes});
+	    roundResults.sort( (a, b) => b.votes-a.votes ); 
+	    console.log(roundResults);
             var possibleWinner = roundResults[0];
             if ((possibleWinner.votes/totalVotersResponding) > 0.5) {
                 if ((roundResults.length == 1) || (possibleWinner.votes > roundResults[1].votes)) {
