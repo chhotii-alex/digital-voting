@@ -21,8 +21,7 @@
     <p/>
     <div v-show="admin">
         <span v-show="showingUsers" >
-            <b>Users:</b>
-            <table>
+            <b>Users:</b><table>
                 <thead><tr>
                     <th style="text-align:left">Name</th>
                     <th style="text-align:left">Email</th>
@@ -66,7 +65,7 @@
         <div v-if="showingQuestions" >
             <div v-if="!allquestions.length" class="fineprint" >No questions to show</div>
         </div>
-        <div v-show="closedQuestions.length" style="margin:20px;" >
+        <div v-show="closedQuestions.length" style="margin: 80px 20px 20px 20px;" >
             <b>Closed Questions: </b>
         <table style="width:100%" >
             <thead>
@@ -114,7 +113,7 @@
             </tbody>
         </table>
         </div>
-        <div v-show="pollingQuestions.length" style="margin:20px;" >
+        <div v-show="pollingQuestions.length" style="margin: 80px 20px 20px 20px;" >
             <b>Currently Polling Questions: </b>
             <table style="width:100%" >
                 <thead>
@@ -149,20 +148,19 @@
                 </tbody>
             </table>
         </div>
-        <div v-show="newQuestions.length" style="margin:20px;" >
+        <div v-show="newQuestions.length" style="margin: 80px 20px 20px 20px;" >
             <b>New (Never Posted) Questions: </b>
             <table style="width:100%" >
                 <tbody>
                     <tr v-for="question in newQuestions"  > <td>
                         <span class="row" >
-                            <!-- TODO: combo box for type of question (single, multiple, ranked-choice) -->
-                            <span style="text-align: right" class="col-2">
+                            <span style="text-align: right" class="col-1">
                                 Text of Question:
                             </span>
-                            <span class="col-6" >
-                                <input v-model="question.text" size="80" />
+                            <span class="col-7" >
+                                <input v-model="question.text" class="widest" />
                             </span>
-                            <span class="col-2" >
+                            <span class="col-1"  style="text-align: center" >
                                 {{ question.typeDescription() }}
                             </span>
                         </span>

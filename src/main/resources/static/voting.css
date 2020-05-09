@@ -53,9 +53,14 @@
     button.borderless {
         border: none;
         font-size: 16px;
+        background-color: white;
     }
     .wide20 {
         width: 20px;
+    }
+    .widest {
+        width: 100%;
+        margin: 5px;
     }
     .fineprint {
         font-size: 10px;
