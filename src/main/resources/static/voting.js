@@ -530,6 +530,11 @@ class RankedChoiceBallot extends Ballot {
         str = str + " on the question " + this.theQuestion.text;
         return str;
     };
+    /* TODO: submit entire ranking in one message
+        This is a messy source of potential bugs-- having to keep track of which messages have been
+        acknowledged, and answering the question "did I successfully submit the vote or not?"
+        Try changing the endpoint to accept an Array
+    */
     submitVote() {
         var j;
         this.voteSubmissionAttempted = true;

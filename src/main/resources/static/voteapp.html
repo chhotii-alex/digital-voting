@@ -39,6 +39,7 @@ gPageLoadQuestions = ##QUESTIONS##;
                 </div>
             </div>
             <div v-if="question.isRankedChoice()" >
+                <!-- TODO: have Alan look at the UI of this -->
                 <div class="row" v-if="!question.ballot.canEditResponses()">
                     <span class="col-4 boxed"  >
                         Chosen options, in ranked order:<br/>
