@@ -156,6 +156,11 @@ public class VoterListManager {
         }
     }
 
+    public boolean activateAccountWithoutConfirm(Voter v) {
+        v.setEmailConfirmed(true);
+        return updateVoter(v);
+    }
+
     /**
      * Query for a Voter with this email address, or this is the old email address
      * @param email

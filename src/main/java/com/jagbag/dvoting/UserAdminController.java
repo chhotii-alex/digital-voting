@@ -77,7 +77,13 @@ public class UserAdminController extends APIController {
         if (!v.getCurrentEmail().equals(patchVoter.getEmail())) {
             // email updating protocol
             v.submitEmailChange(patchVoter.getEmail());
-            sendConfirmationEmail(v);
+            if (emailSender.isConfiguredForEmail()) {
+                sendConfirmationEmail(v);
+            }
+            else {
+                // If we can't send emails, update emails right away w/o confirmation.
+                voterListManager.activateAccountWithoutConfirm(v);
+            }
         }
         if (voterListManager.updateVoter(v)) {
             return new ResponseEntity(v, HttpStatus.OK);

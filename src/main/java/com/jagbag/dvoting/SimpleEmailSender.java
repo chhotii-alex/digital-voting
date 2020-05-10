@@ -1,6 +1,7 @@
 package com.jagbag.dvoting;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -17,12 +18,24 @@ public class SimpleEmailSender implements EmailSender {
     @Autowired
     public JavaMailSender emailSender;
 
+    @Value( "${email-enabled}" )
+    private String emailEnabledProperty;
+
+    public boolean isConfiguredForEmail() {
+        return emailEnabledProperty.equals("yes");
+    }
+
     @Override
     public void sendEmail(String email, String subject, String text) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject(subject);
-        message.setText(text);
-        emailSender.send(message);
+        if (isConfiguredForEmail()) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject(subject);
+            message.setText(text);
+            emailSender.send(message);
+        }
+        else {
+            System.err.println("Attempt to send email when we are not configured for email!");
+        }
     }
 }

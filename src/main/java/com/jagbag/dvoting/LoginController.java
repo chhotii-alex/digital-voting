@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class LoginController extends APIController {
     @Autowired private VoterListManager voterListManager;
 
+    @Value( "${base-url}" )
+    private String hostBaseURL;
+
     /** Text template for the body of the email to be sent asking users to confirm their email address. */
     @Value("classpath:static/confirmemail.html")
     protected Resource confirmEmailTemplate;
@@ -69,11 +72,16 @@ public class LoginController extends APIController {
      */
     @GetMapping("/forgot")
     public ResponseEntity getForgotPasswordPage()  {
-        try {
-            return ResponseEntity.ok().body(textFromResource(forgotPasswordPage));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not find reset password page");
+        if (emailSender.isConfiguredForEmail() ){
+            try {
+                return ResponseEntity.ok().body(textFromResource(forgotPasswordPage));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not find reset password page");
+            }
+        }
+        else {
+            return ResponseEntity.ok().body("I'm sorry, password resetting is not currently available. Please contact Alex for help.");
         }
     }
 
@@ -238,18 +246,25 @@ public class LoginController extends APIController {
             // TODO: what would be the right way to log ?
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create new account");
         }
-        if (!sendConfirmationEmail(v)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not send confirmation email");
+        if (emailSender.isConfiguredForEmail()) {
+            if (!sendConfirmationEmail(v)) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not send confirmation email");
+            }
+            String text = new String(Files.readAllBytes(awaitConfirmPage.getFile().toPath()));
+            return ResponseEntity.ok().body(text);
         }
-        String text = new String(Files.readAllBytes(awaitConfirmPage.getFile().toPath()));
-        return ResponseEntity.ok().body(text);
+        else {
+            // If email is not available, turn off requiring confirmation of email. Activate immediately.
+            voterListManager.activateAccountWithoutConfirm(v);
+            return ResponseEntity.ok().body("Created account! Click back button to return to login page.");
+        }
     }
 
     private boolean sendConfirmationEmail(Voter v) {
         try {
             String text = v.processEmailText(textFromResource(confirmEmailTemplate));
             // TODO: how do we get the actual URL we're running at?
-            text = text.replaceAll("##BASEURL##", "http://localhost:8080");
+            text = text.replaceAll("##BASEURL##", hostBaseURL);
             emailSender.sendEmail(v.getEmail(), "please confirm your email", text);
             return true;
         }

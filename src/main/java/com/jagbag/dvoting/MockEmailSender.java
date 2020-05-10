@@ -8,6 +8,11 @@ import org.springframework.stereotype.Component;
  * Mock interface with email, for development purposes, when we can't actually send email.
  */
 public class MockEmailSender implements EmailSender {
+
+    public boolean isConfiguredForEmail() {
+        return true; // never sends email, but for dev, will always PRETEND to
+    }
+
     @Override
     public void sendEmail(String email, String subject, String text) {
         System.out.println("To: " + email);
