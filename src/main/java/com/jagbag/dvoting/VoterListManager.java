@@ -260,6 +260,11 @@ public class VoterListManager {
         return success;
     }
 
+    /**
+     * Persists any changes to a detached Voter object made prior to calling this
+     * @param a Voter, must be detached!
+     * @return whether writing to the database succeeded
+     */
     public boolean updateVoter(Voter v) {
         boolean success = true;
         EntityManager em = emf.createEntityManager();

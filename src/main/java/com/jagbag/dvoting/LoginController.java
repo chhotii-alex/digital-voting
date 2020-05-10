@@ -20,6 +20,12 @@ public class LoginController extends APIController {
     @Value( "${base-url}" )
     private String hostBaseURL;
 
+    @Value( "${auto-priv-everyone:no}" )
+    private String autoPrivilegeEveryone;
+    public boolean isAutoPrivilegingEveryone() {
+        return autoPrivilegeEveryone.equals("yes");
+    }
+
     /** Text template for the body of the email to be sent asking users to confirm their email address. */
     @Value("classpath:static/confirmemail.html")
     protected Resource confirmEmailTemplate;
@@ -183,7 +189,8 @@ public class LoginController extends APIController {
                 String.format("token=%s; HttpOnly; SameSite=Lax", loginManager.tokenForUser(username)));
         responseHeaders.add("Set-Cookie",
                 String.format("user=%s; SameSite=Lax", username));
-        return ResponseEntity.ok().headers(responseHeaders).body(textFromResource(landingPage));
+        responseHeaders.add("Location", "/");
+        return ResponseEntity.status(HttpStatus.SEE_OTHER).headers(responseHeaders).build();
     }
 
     @PostMapping("/changepassword")
@@ -245,6 +252,11 @@ public class LoginController extends APIController {
             // This would be a wtf error.
             // TODO: what would be the right way to log ?
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create new account");
+        }
+        if (isAutoPrivilegingEveryone()) {  // FOR DEMO ONLY!!!
+            v.setAllowedToVote(true);
+            v.setAdmin(true);
+            voterListManager.updateVoter(v);
         }
         if (emailSender.isConfiguredForEmail()) {
             if (!sendConfirmationEmail(v)) {
