@@ -7,6 +7,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.validation.constraints.*;
 import javax.persistence.*;
@@ -32,6 +33,33 @@ import javax.xml.bind.DatatypeConverter;
  * Passwords are never saved in cleartext. Submitted passwords are concatenated with the (user-specific) salt,
  * hashed, and then compared with the password hash. This mean that reading the database does not give you the
  * information you would need to log in as someone else.
+ * TODO: A Voter may assign their "proxy" to another Voter.
+ * Note: Hibernate is apparently not able to update the database from the previous schema to accommodate
+ * this. Some kind of error trying to execute "alter table voter add column proxy_accepted boolean not null"
+ * Manually running "alter table voter add column proxy_accepted boolean default FALSE not null" works.
+ * Story: Voter opens a page or a box
+ * with a drop-down list of all the authorized Voters who have not assigned their own vote to a proxy,
+ * and who have fewer than 2 active proxy relationships where they are the proxy-holder.
+ * Voter may pick one, and click on "Assign Proxy".
+ * Info on the Voter will display "Proxy: (name) - not yet accepted".
+ * Proxy gets email with a confirmation link, and a refusal link.
+ * When/if the requested proxy clicks on the confirmation link, the proxy relationship
+ * is activated. If the requested proxy clicks on the refusal link, the proxy request is canceled.
+ * (Send email to the person who requested their proxy be held, with the news of what the other person
+ * decided.)
+ * At any time, the Voter who assigned their proxy can click on "Revoke Proxy".
+ * Administration page should have another column, showing the proxy holder (greyed out if not active).
+ * If a Voter has granted their proxy to another, and the acceptance has been confirmed, the Voter may
+ * view questions, but not vote-- their ballot does NOT get chits signed by the CTF.
+ * When the proxy HOLDER logs in, in addition to the VOTE here link, they have an additional link
+ * for each person whose proxy they hold, i.e.:
+ * VOTE here
+ * VOTE here on David's behalf
+ * VOTE here on Sandy's behalf
+ * Same link but with a query paramter.
+ * Voting page should announce whose proxy it's voting for.
+ * Voting page submits chits for signing with the username not of the logged-in voter, but with the proxy grantee.
+ * Future enhancement: proxy relationships having expiration
  */
 @Entity
 public class Voter {
@@ -55,6 +83,15 @@ public class Voter {
     private String resetPasswordSalt;
     private String resetPasswordHash;
     private String resetConfirmationCode;
+/* Not yet implemnting proxies
+    @ManyToOne
+    @JoinColumn(name = "fk_proxy")
+    private Voter proxyHolder;
+    private boolean proxyAccepted;
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_proxy")
+    public List<Voter> proxyGrantees;
+*/
 
     protected Voter() {} // Hibernate needs this
 
@@ -82,6 +119,10 @@ public class Voter {
     public void setAdmin(boolean flag) { this.admin = flag; }
     private String getConfirmationCode() { return this.confirmationCode; }
     public boolean isEmailConfirmed() { return emailConfirmed; }
+/* Not yet implementing granting proxies
+    public Voter getProxyHolder() { return proxyHolder; }
+    public boolean isProxyAccepted() { return proxyAccepted; }
+    public List<Voter> getProxyGrantees() { return proxyGrantees; }  */
 
     /**
      * Come up with a new ugly random password that a user can use if they can't remember their password.
