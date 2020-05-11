@@ -1,0 +1,75 @@
+Run "My JUnit Tests"; make script will fail if any of the tests fail.
+
+Decide are you deploying as "demo" or "prod"
+
+Update the appropriate application-{config}.properties file to contain the file name for the correct keystore
+file to use, and the password(s) on the key:
+server.ssl.key-store=classpath:keystore.jks
+server.ssl.key-store-password={password}
+server.ssl.key-password={password}
+keystore.jks - signed by CA for external website
+keystore.p12 - self-signed for development
+
+Build the jar
+In the terminal, in the base project directory:
+./mvnw -Pdemo clean install
+(Or -Pprod for the production version)
+
+cd target
+upload jar to server  (which takes a while on my crappy Wifi)
+
+For production:
+- database password?
+- details of connecting to smtp server?
+
+Making the Spring Boot Tomcat instance use https
+
+I haven't seen a really good tutorial. I would think this would be a well-work path. Here's couple of tutorials that I found helpful, although it was still a puzzle to put it all together:
+https://medium.com/@JavaArchitect/configure-ssl-certificate-with-spring-boot-b707a6055f3
+https://www.thomasvitale.com/https-spring-boot-ssl-certificate/
+
+There's two different situations: One, when just doing development, and running on you own home personal computer. For that situation, a self-signed certificate is just fine. It's easy enough if you follow Thomas's instructions-- he walks you through that just great.
+
+Then there's the situation where you actually want to deploy it to a server out there on the 'net so other people who are not in your house can use it. For that, you need a certificate signed by a CA. Otherwise your users get a scary message in their browsers that they should find disconcerting. This is where things get complicated.
+
+Let's assume your server, in addition to running this jar on port 8443, also runs a typical web server (say Apache) on port 80. You can get a certificate to enable Apache to use https and then also use it for the Tomcat in your Spring Boot application. You will need a domain name, and have the name servers of the world point that domain name to the IP address of your server. That is a prerequisite for DV level certification.
+
+I followed the link from Thomas's page to Let's Encrypt and followed the pretty simple instructions there to have that automatically set things up for Apache. This resulted in the following files being created in the directory /etc/letsencrypt/live/{mydomainname}/ :
+
+privkey.pem  the private key
+cert.pem     server certificate
+chain.pem    intermediate certificates
+fullchain.pem    all certificates
+
+These are in PEM format, readable in a text editor: something like
+------ BEGIN CERTIFICATE ----------
+at the start of the file, and likewise with END at the end, with a big block of base64 encoded stuff in the middle. My instructions assume you got the exact same setup. If the files are different: good luck figuring out how to adjust!
+
+cd into /etc/letsencrypt/live/{yourdomainname}/
+
+mkdir tomcat
+
+Now use openssl to convert key and certificate to a .p12 file. This will prompt for a password-- supply a new password when prompted.
+
+openssl pkcs12 -export -in cert.pem -inkey privkey.pem -name tomcat -out tomcat/key.p12
+
+Import key and certificate from .p12 to a new .jks file. In the .jks file, these will have the alias that corresponds to the name you gave in the previous command, i.e., tomcat. In place of {myPassPhrase} put a password that will be the keystone password and the key password (no reason that they can't be the same.) Make a note of this password! You will be putting that into application.properties but you might want to remember not to commit that to git with the real password in there.
+
+keytool -importkeystore -deststorepass {myPassPhrase} -destkeypass {myPassPhrase} -destkeystore tomcat/keystore.jks -srckeystore tomcat/key.p12 -srcstoretype PKCS12
+
+Import the intermediate certificates into the .jks file.
+Note that we are giving that a different alias ("bundle"). If the alias is tomcat, i.e. the alias of the key imported above, you get an error about public keys not matching.
+
+keytool -import -alias bundle -trustcacerts -file chain.pem -keystore tomcat/keystore.jks
+
+At the end of this you have a file in the tomcat directory named keystore.jks which has to be in your project. Copy that over into your Spring Boot project, into src/main/resources/
+
+
+In application properties, set:
+server:
+	ssl:
+		keystore: classpath:keystore.jks
+		key-store-password: {myPassPhrase}
+		key-alias: the alias
+		key-password={myPassPhrase}
+
