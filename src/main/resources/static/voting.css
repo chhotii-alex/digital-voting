@@ -4,6 +4,9 @@
     input {
         font-size: 16px;  // make input fields at least 16px on small screens to avoid annoying iPhone
     }
+    .roomy {
+        margin: 6px;
+    }
     .newbutton {
         border: none;
         color: white;

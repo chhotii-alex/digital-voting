@@ -34,27 +34,35 @@ function checkNewPasswords(e) {
     </form>
     <p/>
     <div v-show="admin">
-        <a href="admin.html"  >Open the Administration Page</a>
+        <a href="admin.html"  >Administration Page&mdash; Manage Voter Permissions and Questions</a>
+        <p/>
     </div>
     <div v-show="allowedToVote" >
-        <a href="voting" >Open the Voting Page</a>
-    </div>
-    {{ name }}
-    {{ email }}  <!-- displays the EFFECTIVE email address here (which may be oldEMail if not confirmed) -->
-    <div v-show="!isShowingEdit" >
-        <button class="loginbutton" v-on:click="isShowingEdit=true" >Edit Name and Email</button>
-    </div>
-    <div v-show="isShowingEdit" >
+        <b><i>
+            <a href="voting" class="roomy">VOTE here</a>
+        </i></b>
+        <p/>
 
-        Enter new name: <input v-model="newName" /><br/>
-        Enter new email address: <input v-model="newEmail" /><br/>
-        <i>Note: any new email address will not be in effect until confirmed.</i>
-        <button class="loginbutton" :disabled="!canSaveEdits" v-on:click="saveEdits">Save Changes</button>
     </div>
-    <i>{{ newEmailNote }}</i>
-    <div v-if="newEmailNote">
-        <button class="loginbutton" v-on:click="getUserInfo">Refresh</button>
-    </div>
+    <fieldset class="roomy">
+        <legend>My Account</legend>
+        <b>Name:</b><span class="roomy">{{ name }}</span>
+        <b>Email:</b><span class="roomy">{{ email }}</span>  <!-- displays the EFFECTIVE email address here (which may be oldEMail if not confirmed) -->
+        <div v-show="!isShowingEdit" >
+            <button class="loginbutton roomy" v-on:click="isShowingEdit=true" >Edit Name and Email</button>
+        </div>
+        <div v-show="isShowingEdit" >
+
+            Enter new name: <input v-model="newName" class="roomy" /><br/>
+            Enter new email address: <input v-model="newEmail" class="roomy"/><br/>
+            <i>Note: any new email address will not be in effect until confirmed.</i>
+            <button class="loginbutton" :disabled="!canSaveEdits" v-on:click="saveEdits">Save Changes</button>
+        </div>
+        <i>{{ newEmailNote }}</i>
+        <div v-if="newEmailNote">
+            <button class="loginbutton" v-on:click="getUserInfo">Refresh</button>
+        </div>
+    </fieldset>
 </div>
 
 <button onclick="showChangePassword()" class="loginbutton">Change My Password</button>
