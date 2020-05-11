@@ -7,6 +7,8 @@ file to use, and the password(s) on the key:
 server.ssl.key-store=classpath:keystore.jks
 server.ssl.key-store-password={password}
 server.ssl.key-password={password}
+
+Here's the keystores I have (so I remember which is which):
 keystore.jks - signed by CA for external website
 keystore.p12 - self-signed for development
 
