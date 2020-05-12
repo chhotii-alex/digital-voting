@@ -516,6 +516,9 @@ class SingleChoiceBallot extends Ballot {
 	    }
 	    else {
 	        this.verificationMessage = "Verification of vote failed.";
+	        if (this.iVoted()) {
+    	        this.setState(Ballot.DECIDED_STATE);  // can't change decision but can click on VOTE again
+    	    }
             LogTrouble(this.verificationMessage);
 	    }
 	};
@@ -643,13 +646,14 @@ class RankedChoiceBallot extends Ballot {
                     }
             }
 	    }
-	    if (this.state != Ballot.UNDECIDED_STATE) {
+	    if (this.iVoted()) {
     	    if (responsesFound.every((item) => item)) {
     	        this.verificationMessage = 'Verified!';
     	        this.setState(Ballot.VERIFIED_STATE);
 	        }
 	        else {
 	            this.verificationMessage = 'Not all items in ranking verified.';
+	            this.setState(Ballot.DECIDED_STATE);
                 LogTrouble(this.verificationMessage);
 	        }
 	    }

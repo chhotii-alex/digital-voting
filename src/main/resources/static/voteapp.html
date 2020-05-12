@@ -132,6 +132,7 @@ gPageLoadQuestions = ##QUESTIONS##;
                 </button>
             </div>
             <i>{{ question.ballot.verificationMessage }}</i>
+            <!-- TODO: For a single-choice question, we show the results tally, after the question closes. Should we do the same for ranked? -->
             <span v-if="question.shouldShowResultsDetail()" >
                 <div v-for="(count, opt) in question.ballot.results" >
                     <b>{{ opt }} :</b> <i> {{ count }} </i>
