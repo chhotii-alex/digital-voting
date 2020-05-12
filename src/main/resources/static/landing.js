@@ -19,7 +19,7 @@ var landingApp = new Vue({
         getUserInfo: function() {
             let url = "voters/" + this.$data.username;
             let aPromise = axios.get(url);
-            aPromise.then(response => this.processUserInfo(response), error => this.dealWithError(error));
+            aPromise.then(response => this.processUserInfo(response), error => handleQueryError(error));
         },
         processUserInfo: function(response) {
             this.$data.name = response.data.name;
@@ -41,7 +41,7 @@ var landingApp = new Vue({
             let promise = axios.patch(url, editedVoter);
             promise.then( response => this.processUpdateResponse(response) )
             .catch(function (error) {
-                console.log(error);
+                handleQueryError(error);
             });
         },
         processUpdateResponse: function(response) {

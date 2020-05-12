@@ -42,10 +42,6 @@ public class LoginController extends APIController {
     @Value("classpath:static/login.html")
     protected Resource loginPage;
 
-    /**File containing page we return from new user form if new user proposed username not unique */
-    @Value("classpath:static/dupnameerr.html")
-    protected Resource duplicateNamePage;
-
     /** File continaing the page with the 'forgot password' form */
     @Value("classpath:static/forgot.html")
     protected Resource forgotPasswordPage;
@@ -181,8 +177,12 @@ public class LoginController extends APIController {
         if (username == null || password == null) {
             return getLoginPage();
         }
-        if (!loginManager.validateLoginCredentials(username, password)) {
+        Voter v = loginManager.validateLoginCredentials(username, password);
+        if (v == null) {
             return getLoginPage();
+        }
+        if (!v.isActiveAccount()) {
+            return redirectToPage("please_confirm_email.html");
         }
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.add("Set-Cookie",
@@ -195,26 +195,40 @@ public class LoginController extends APIController {
 
     @PostMapping("/changepassword")
     public ResponseEntity changePassword(@RequestHeader HttpHeaders headers, @RequestBody String formData) throws Exception {
-        Voter v = loginManager.validateBasicUser(headers);
+        Voter v;
+        try {
+            v = loginManager.validateBasicUser(headers);
+        }
+        catch (Exception ex) {
+            return redirectToPage("/logged_out_password_change_attempt.html");
+        }
         Map<String, String> formValue = parseForm(formData);
         String oldPassword = formValue.get("password");
         String newPassword1 = formValue.get("password1");
         String newPassword2 = formValue.get("password2");
         if (oldPassword == null || newPassword1 == null ||  newPassword2 == null) {
-            return getLanding(headers);
+            /* TODO: test whether the following statement is true:
+                We should never get here, because the JavaScript validates.
+             */
+            throw new BadRequestException();
         }
         if (!newPassword1.equals(newPassword2)) {
-            return getLanding(headers);
+            /* TODO: test whether the following statement is true:
+                We should never get here, because the JavaScript validates.
+             */
+            throw new BadRequestException();
         }
-        if (!loginManager.validateLoginCredentials(v.getUsername(), oldPassword)) {
-            return getLanding(headers);
+        if (null == loginManager.validateLoginCredentials(v.getUsername(), oldPassword)) {
+            /* TODO: test this
+             */
+            return redirectToPage("/mistyped_password_password_change_attempt.html");
         }
         // validateLoginCredentials will have re-set the token, so they will have to log in again
         if (!voterListManager.setPassword(v, newPassword1)) {
             // this would be wtf
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to change password");
         }
-        return ResponseEntity.ok().body(textFromResource(successPage));
+        return redirectToPage("/success.html");
     }
 
     @PostMapping("/newuser")
@@ -226,13 +240,6 @@ public class LoginController extends APIController {
         if (!formValue.containsKey("user")) { validationChecksOK = false; }
         // user does not contain spaces
         if (formValue.get("user").indexOf(' ') >= 0) { validationChecksOK = false; }
-        // Proposed user name not already used by any other account
-        Voter existingAccount = voterListManager.getForUsername(formValue.get("user"));
-        if (existingAccount != null) { // Inform user that there's an existing account with that username
-            String text = textFromResource(duplicateNamePage);
-            text = text.replaceAll("##USER##", formValue.get("user"));
-            return ResponseEntity.ok().body(text);
-        }
         // "password" field mandatory
         if (!formValue.containsKey("password")) { validationChecksOK = false; }
         // "password2" field mandatory
@@ -245,13 +252,31 @@ public class LoginController extends APIController {
         // "name" field mandatory
         if (!formValue.containsKey("name")) { validationChecksOK = false; }
         if (!validationChecksOK) {
-            return getLoginPage();
+            return redirectToPage("/login.html");
         }
-        Voter v = new Voter(formValue.get("name"), formValue.get("user"), formValue.get("email"));
-        if (!voterListManager.addVoter(v, formValue.get("password"))) {
-            // This would be a wtf error.
-            // TODO: what would be the right way to log ?
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create new account");
+        // Proposed user name not already used by any other account
+        Voter v = voterListManager.getForUsername(formValue.get("user"));
+        if (v != null) { // Inform user that there's an existing account with that username
+            if (v.isActiveAccount()) {
+                return redirectToPage(String.format("/dupnameerr.html?user=%s", formValue.get("user")));
+            }
+            else {
+                // There's an account with that username, but it was never activated.
+                // Re-use the username for this person.
+                v.setPassword(formValue.get("password"));
+                v.setEmail(formValue.get("email"));
+                v.setName(formValue.get("name"));
+                v.invalidateConfirmationCode();
+                voterListManager.updateVoter(v);
+            }
+        }
+        if (v == null) {
+            v = new Voter(formValue.get("name"), formValue.get("user"), formValue.get("email"));
+            if (!voterListManager.addVoter(v, formValue.get("password"))) {
+                // This would be a wtf error.
+                // TODO: what would be the right way to log ?
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create new account");
+            }
         }
         if (isAutoPrivilegingEveryone()) {  // FOR DEMO ONLY!!!
             v.setAllowedToVote(true);
@@ -262,13 +287,12 @@ public class LoginController extends APIController {
             if (!sendConfirmationEmail(v)) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not send confirmation email");
             }
-            String text = new String(Files.readAllBytes(awaitConfirmPage.getFile().toPath()));
-            return ResponseEntity.ok().body(text);
+            return redirectToPage("newawaitconfirm.html");
         }
         else {
             // If email is not available, turn off requiring confirmation of email. Activate immediately.
             voterListManager.activateAccountWithoutConfirm(v);
-            return ResponseEntity.ok().body("Created account! Click back button to return to login page.");
+            return redirectToPage("createdaccount.html");
         }
     }
 

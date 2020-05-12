@@ -22,30 +22,27 @@ public class LoginManager {
     private Map<String, String> tokens = new HashMap<String, String>();
     private Map<String, Long> backoffPerLogin = new HashMap<String, Long>();
 
-    public boolean validateLoginCredentials(String username, String password) {
+    public Voter validateLoginCredentials(String username, String password) {
         Voter v = voterListManager.getForUsername(username);
         if (v == null) {
-            return false;
-        }
-        if (!v.isActiveAccount()) {
-            throw new UnauthorizedException();
+            return null;
         }
         try {
             if (v.checkPassword(password)) {
                 createTokenForUser(username);
-                return true;
+                return v;
             }
             else {
                 // exponential backoff, to mitigate dictionary attack
                 Thread.currentThread().sleep(incrementBackoffForUser(username));
-                return false;
+                return null;
             }
         }
         catch (Exception ex) {
             // Theoretically checkPassword() throws exceptions, but this would be a big wtf exception.
             // TODO: Log such a disasterous wtf correctly
             ex.printStackTrace();
-            return false;
+            return null;
         }
     }
 
@@ -105,7 +102,7 @@ public class LoginManager {
         }
         Voter v = voterListManager.getForUsername(username);
         if (v == null) {
-            return null;
+            throw new UnauthorizedException();
         }
         if (!v.isActiveAccount()) {
             throw new UnauthorizedException();

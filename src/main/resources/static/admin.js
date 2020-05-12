@@ -153,7 +153,7 @@ class AdministratableQuestion extends Question {
             adminApp.fetchQuestions();
         })
         .catch(function (error) {
-            console.log(error);
+            handleQueryError(error);
         });
     }
     canBePosted() {
@@ -177,7 +177,7 @@ class AdministratableQuestion extends Question {
                 adminApp.fetchQuestions();
             })
             .catch(function (error) {
-                console.log(error);
+                handleQueryError(error);
             });
 
     }
@@ -198,7 +198,7 @@ class AdministratableQuestion extends Question {
                 adminApp.fetchQuestions();
             })
             .catch(function (error) {
-                console.log(error);
+                handleQueryError(error);
             });
         }
     }
@@ -210,16 +210,19 @@ class AdministratableQuestion extends Question {
         let prompt = "Delete question?   " + this.text;
         let response = confirm(prompt);
         if (response) {
-            adminApp.removeQuestion(this);
             if (this.original) {
                 let url = "questions/" + this.original.id + "/delete";
                 let promise = axios.delete(url, this);
-                promise.then(function (response) {
+                promise.then( (response) => {
+                    adminApp.removeQuestion(this);
                     adminApp.fetchQuestions();
                 })
                 .catch(function (error) {
-                    console.log(error);
+                    handleQueryError(error);
                 });
+           }
+           else {
+                adminApp.removeQuestion(this);
            }
         }
     }
@@ -268,7 +271,7 @@ class Voter {
             adminApp.fetchUsers();
         })
         .catch(function (error) {
-            console.log(error);
+            handleQueryError(error);
         });
     }
 }
@@ -297,7 +300,7 @@ var adminApp = new Vue({
         this.$data.username = getUser();
         let url = "voters/" + this.$data.username;
         let aPromise = axios.get(url);
-        aPromise.then(response => this.processUserInfo(response), error => this.dealWithError(error));
+        aPromise.then(response => this.processUserInfo(response), error => handleQueryError(error));
     },
     watch: {
         showOldQuestions: function(val) {
@@ -361,13 +364,10 @@ var adminApp = new Vue({
             }
             this.$data.allquestions = newArray;
         },
-        dealWithError: function(error) {
-            this.$data.errorText = "Error: " + error;
-        },
         fetchQuestions: function() {  // Complete list of questions from admin's point of view
             let url = "questions/";
             let aPromise = axios.get(url);
-            aPromise.then(response => this.processQuestionList(response), error => this.dealWithError(error));
+            aPromise.then(response => this.processQuestionList(response), error => handleQueryError(error));
         },
         startRepeatedlyUpdatingQuestions: function() {
             this.fetchQuestions();
@@ -402,12 +402,12 @@ var adminApp = new Vue({
             this.$data.allquestions.splice(index, 1);
         },
         fetchUsers: function() {
-            this.$data.showingUsers = true;
             let url = "voters/";
             let promise = axios.get(url);
-            promise.then(response => this.processUserList(response), error => this.dealWithError(error));
+            promise.then(response => this.processUserList(response), error => handleQueryError(error));
         },
         processUserList: function(response) {
+            this.$data.showingUsers = true;
             this.$data.userRefreshTime = new Date();
             console.log(response.data);
             this.$data.allusers = [];

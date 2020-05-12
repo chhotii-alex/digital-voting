@@ -299,10 +299,16 @@ class Ballot {
         .catch( (error) => {
             console.log(error.response);
             if (!this.errorCountPerSigning) {
-                if (error.response && (error.response.status == 403)) {   // Forbidden
-                    // Why would the CTF refuse to sign? The only likely possibility is that the question closed
-                    // just as we loaded. Re-fetch the question list so that we can detect that it closed (if so.)
-                    voterApp.checkForNewQuestions();
+                if (error.response) {
+                    if  (error.response.status == 403) {   // Forbidden
+                        // Why would the CTF refuse to sign? The only likely possibility is that the question closed
+                        // just as we loaded. Re-fetch the question list so that we can detect that it closed (if so.)
+                        voterApp.checkForNewQuestions();
+                    }
+                    else if (error.response.status == 401) {  // Unauthorized
+                        alert("Either you were logged out, or your permission to vote was revoked.");
+                        window.location.href = "/";
+                    }
                 }
                 else {  // TODO: test that general internet glitchyness would end up here?
                     alert("Internet glitch? Glitch in communication with server. Please check your network and try re-loading this page.");
@@ -735,7 +741,6 @@ var voterApp = new Vue({
         errorText: '',
         votableQuestions: [],
         isKeyInfoKnown: false,
-        showOldQuestions: false,
     },
     mounted() {
         this.$data.username = getUser();
@@ -752,6 +757,22 @@ var voterApp = new Vue({
                 }
             } );
             return anyVoted;
+        },
+        hasUnshownOldQuestions: function() {
+            let ids = getArchivedBallotIdentifiers();
+            var i;
+            for (i = 0; i < ids.length; ++i) {
+                let id = ids[i];
+                var found = false;  // whether it's already in the list we're showing
+                var j;
+                for (j = 0; j < this.$data.votableQuestions.length; ++j) {
+                     if (id ==  this.$data.votableQuestions[j].id) {
+                         found = true; break;
+                     }
+                }
+                if (!found) { return true; }
+            }
+            return false;
         }
     },
     methods: {
@@ -767,7 +788,7 @@ var voterApp = new Vue({
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;
             LogTrouble(this.$data.errorText);
-            alert(error);
+            handleQueryError(error);
         },
         fetchCTFKeys: function() {
             if (gModulus && gPublicKey) {
@@ -797,10 +818,10 @@ var voterApp = new Vue({
         checkForNewQuestions: function() {  // from voter's POV: questions that they can vote on now
             let url = "ballots/";
             let aPromise = axios.get(url);
-            aPromise.then(response => this.processOpenQuestions(response.data), error => this.dealWithError(error));
+            aPromise.then(response => this.processOpenQuestions(response.data),
+                error => handleQueryError(error));
         },
         startShowingOldQuestions: function() {
-            this.$data.showOldQuestions = true;
             let ids = getArchivedBallotIdentifiers();
             var i;
             for (i = 0; i < ids.length; ++i) {
@@ -813,9 +834,18 @@ var voterApp = new Vue({
                      }
                 }
                 if (!found) {
+                    var errorCount = 0;
                     let url = "/questions/" + id;
                     let promise = axios.get(url);
-                    promise.then( response => this.processOldQuestion(response), error => {});
+                    promise.then( response => this.processOldQuestion(response),
+                        error => {
+                            if (!(error.response && error.response.status == 404)) {
+                                if (!errorCount) {
+                                    handleQueryError(error);
+                                }
+                                ++errorCount;
+                            }
+                        });
                 }
             }
         },

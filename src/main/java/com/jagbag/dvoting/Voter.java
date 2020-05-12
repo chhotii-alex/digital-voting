@@ -236,4 +236,7 @@ public class Voter {
         }
     }
 
+    public void invalidateConfirmationCode() {
+        confirmationCode = null;
+    }
 }

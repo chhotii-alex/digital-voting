@@ -2,6 +2,9 @@ package com.jagbag.dvoting;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import javax.persistence.EntityManagerFactory;
 import java.io.File;
@@ -60,6 +63,12 @@ public class APIController {
             formValue.put(fields[0], fields[1].trim());
         }
         return formValue;
+    }
+
+    public ResponseEntity redirectToPage(String pageFileName) {
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.add("Location", pageFileName);
+        return ResponseEntity.status(HttpStatus.SEE_OTHER).headers(responseHeaders).build();
     }
 
 }

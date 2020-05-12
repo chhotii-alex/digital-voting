@@ -31,7 +31,13 @@ public class VotingAPIController extends APIController {
 
     @GetMapping("/voting")
     public ResponseEntity getVotingPage(@RequestHeader HttpHeaders headers) throws Exception {
-        Voter v = loginManager.validateBasicUser(headers);
+        Voter v = null;
+        try {
+            v = loginManager.validateBasicUser(headers);
+        }
+        catch (Exception ex) {
+            return redirectToPage("loggedout.html");
+        }
         if (!v.isAllowedToVote()) {
             return loginController.getLanding(headers);
         }
@@ -43,7 +49,6 @@ public class VotingAPIController extends APIController {
     /* return public key and modulus */
     @GetMapping("/ballots/keys")
     public String getKeys(@RequestHeader HttpHeaders headers) {
-        loginManager.validateVotingUser(headers);
         JSONObject obj = new JSONObject();
         obj.put("public", ctf.getPublicExponent().toString(10));
         obj.put("modulus", ctf.getModulus().toString(10));
@@ -93,7 +98,10 @@ public class VotingAPIController extends APIController {
     @GetMapping(value="ballot/{quid}/verify")
     public ResponseEntity getVoteVerificationInfo(@RequestHeader HttpHeaders headers,
                                                   @PathVariable int quid) {
-        loginManager.validatePrivilegedUser(headers);
+        /*
+        Just as you don't need to be logged in to vote (using an already-signed chit) you shouldn't
+        need to be logged in to verify that it went through.
+         */
         List<Vote> votes = ctf.detailedTabulationForQuestion(quid);
         return new ResponseEntity(votes, HttpStatus.OK);
     }

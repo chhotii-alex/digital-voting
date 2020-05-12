@@ -53,7 +53,7 @@ class QuestionAdminControllerTest {
             fail("weird exception thrown");
         }
         // log in as admin
-        if (!loginManager.validateLoginCredentials("admin", "changeme!")) {
+        if (null == loginManager.validateLoginCredentials("admin", "changeme!")) {
             fail("Could not log in as admin");
         }
         String token = loginManager.tokenForUser("admin");

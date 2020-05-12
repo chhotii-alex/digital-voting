@@ -9,6 +9,7 @@
     <script src="googclosure.js"></script>
     <script src="cookie.js"></script>
     <script src="question.js"></script>
+    <script src="util.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
 <body>
 <link rel="stylesheet" type="text/css" href="voting.css" >
@@ -92,7 +93,10 @@ gPageLoadQuestions = ##QUESTIONS##;
                 </div>
             </span>
         </div>
-        <button v-if="!showOldQuestions" v-on:click="startShowingOldQuestions" class="bigbutton" >
+        <div v-if="!hasUnshownOldQuestions && !votableQuestions.length" >
+            <i>No questions to vote on.</i>
+        </div>
+        <button v-if="hasUnshownOldQuestions" v-on:click="startShowingOldQuestions" class="bigbutton" >
             Show Old Questions
         </button>
     </div>
