@@ -20,6 +20,9 @@ In the terminal, in the base project directory:
 cd target
 upload jar to server  (which takes a while on my crappy Wifi)
 
+Command line for starting the jar, and leaving it running, even when logged out:
+nohup java -jar dvoting-0.0.1-SNAPSHOT.jar >dvoting_out.txt 2>dvoting_err.txt &
+
 For production:
 - database password?
 - details of connecting to smtp server?

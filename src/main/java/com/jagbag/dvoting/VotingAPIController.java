@@ -1,5 +1,8 @@
 package com.jagbag.dvoting;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.minidev.json.JSONObject;  // TODO: are we linking an extraneous dependency to make this work?
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -93,6 +96,58 @@ public class VotingAPIController extends APIController {
          */
         HttpStatus result = ctf.receiveVoteOnQuestion(quid, vote);
         return new ResponseEntity(vote.ranking, result);
+    }
+
+    @PostMapping(value="ballot/{quid}/vote_rank")
+    public ResponseEntity submitVoteList(@PathVariable int quid, @RequestBody List<VoteMessage> votes) {
+        /* Pointedly NOT verifying that this is a logged-in voter.
+        We will allow voting through a proxy, from a not-logged-in page. The fact that the ballot is
+        signed authenticates it.
+         */
+        HttpStatus result = HttpStatus.OK;
+        for (VoteMessage vote : votes) {
+            result = ctf.receiveVoteOnQuestion(quid, vote);
+            if (result != HttpStatus.OK) {
+                break;
+            }
+        }
+        return new ResponseEntity(0, result);
+    }
+
+    @GetMapping(value="ballot/{quid}/vote_get")
+    public ResponseEntity submitVoteViaQuery(@PathVariable int quid, @RequestParam String data) {
+        VoteMessage vote;
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            vote = objectMapper.readValue(data, VoteMessage.class);
+        }
+        catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Could not read data from URL.");
+        }
+        HttpStatus result = ctf.receiveVoteOnQuestion(quid, vote);
+        return ResponseEntity.ok().body("Thank you! Your vote will be tallied.");
+    }
+
+    @GetMapping(value="ballot/{quid}/vote_get_rank")
+    public ResponseEntity submitRankVoteViaQuery(@PathVariable int quid, @RequestParam String data) {
+        List<VoteMessage> votes = null;
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            votes = objectMapper.readValue(data, new TypeReference<List<VoteMessage>>(){});
+        }
+        catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Could not read data from URL.");
+        }
+        HttpStatus result = HttpStatus.OK;
+        for (VoteMessage vote : votes) {
+            result = ctf.receiveVoteOnQuestion(quid, vote);
+            if (result != HttpStatus.OK) {
+                break;
+            }
+        }
+        return new ResponseEntity("Thank you! Your vote will be tallied.", result);
     }
 
     @GetMapping(value="ballot/{quid}/verify")

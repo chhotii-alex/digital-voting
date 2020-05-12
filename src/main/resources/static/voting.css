@@ -60,6 +60,9 @@
         padding: 10px;
         margin: 10px;
     }
+    .forcewrap {
+      overflow-wrap: break-word;
+    }
     button.choice {
         border: none;
         padding: 5px;

@@ -119,7 +119,8 @@ class VotableQuestion extends Question {
     }
     canVote() {
         return (!this.closed && this.ballot.hasResponse()
-                && (!this.ballot.iVoted() || !this.ballot.voteAcknowledged)
+                && (this.ballot.state == Ballot.UNDECIDED_STATE ||
+                    this.ballot.state == Ballot.DECIDED_STATE || this.ballot == Ballot.USER_SUBMITTED_STATE)
                 && this.ballot.areAllChitsSigned() );
     }
     shouldShowResultsDetail() {
@@ -210,6 +211,7 @@ class ResponseChit extends Chit {
 class Ballot {
     constructor(question, ballotKey, savedBallotInfo) {
         this.theQuestion = question;
+        this.voteSubmissionURL = '';
         this.ballotKey = ballotKey;
 	    this.verificationMessage = '';
 	    this.results = {};
@@ -231,7 +233,7 @@ class Ballot {
         }
     };
     init() {
-	        this.voteAcknowledged = false;
+        this.state = Ballot.UNDECIDED_STATE;
             this.personalChit = new PersonalChit(this.theQuestion.id);
             this.responseChits = [];
             this.theQuestion.possibleResponses.forEach( (option, i) => {
@@ -240,7 +242,7 @@ class Ballot {
             } );
     };
     initFromSavedBallot(savedBallotInfo) {
-            this.voteAcknowledged = savedBallotInfo.voteAcknowledged;
+        this.state = savedBallotInfo.state;
             this.personalChit = new PersonalChit(this.theQuestion.id, savedBallotInfo.personalChit);
             this.responseChits = [];
             savedBallotInfo.responseChits.forEach( (obj, i) => {
@@ -250,10 +252,14 @@ class Ballot {
     };
     makeSavedBallotObj() {
         var savedBallotInfo = {};
-        savedBallotInfo.voteAcknowledged = this.voteAcknowledged;
+        savedBallotInfo.state = this.state;
         savedBallotInfo.personalChit = this.personalChit;
         savedBallotInfo.responseChits = this.responseChits;
         return savedBallotInfo;
+    };
+    setState(newState) {
+        this.state = newState;
+        this.saveToLocalStorage();
     };
     saveToLocalStorage() {
         setStorageData(this.ballotKey, this.makeSavedBallotObj());
@@ -336,11 +342,36 @@ class Ballot {
         userActive();
         this.submitVote();
     };
+    voteURL() {
+        userActive();
+        let prompt = this.voteConfirmingPrompt();
+        if (!confirm(prompt)) { return; }
+        userActive();
+        let payload = this.generatePayload();
+        let json = JSON.stringify(payload);
+        let encoded = encodeURIComponent(json);
+        this.voteSubmissionURL = "https://localhost:8443/ballot/" + this.theQuestion.id
+            + "/" + this.endpoint + "?data=" + encoded;
+        Vue.nextTick( () => {
+            var text = document.getElementById('url_' + this.theQuestion.id);
+            text.style.height = text.scrollHeight+'px';
+        });
+    };
+    otherBrowserDone() {
+        this.setState(Ballot.USER_SUBMITTED_STATE);
+        this.verifyVote();
+    };
     submitVote() {
         alert("I don't yet know how to submit a vote for a " + this.theQuestion.typeDescription());
     };
-    iVoted() {   // MUST OVERRIDE
-        return false;
+    processVoteResponse(response) {
+        this.setState(Ballot.ACKNOWLEDGED_STATE);
+        this.saveToLocalStorage();
+        this.verifyVote();
+    };
+    iVoted() {
+        return (this.state == Ballot.SUBMITTED_STATE || this.state == Ballot.USER_SUBMITTED_STATE
+            || this.state == Ballot.ACKNOWLEDGED_STATE || this.state == Ballot.VERIFIED_STATE);
     };
     verifyVote() {
         userActive();
@@ -353,24 +384,28 @@ class Ballot {
         console.log("Implement processVerificationData() for " + this.theQuestion.typeDescription());
     };
 };
+Ballot.UNDECIDED_STATE = 0;
+Ballot.DECIDED_STATE = 1;
+Ballot.SUBMITTED_STATE = 2;
+Ballot.ACKNOWLEDGED_STATE = 3;
+Ballot.USER_SUBMITTED_STATE = 4;
+Ballot.VERIFIED_STATE = 5;
 class SingleChoiceBallot extends Ballot {
     constructor(question, ballotKey, savedBallotInfo) {
         super(question, ballotKey, savedBallotInfo);
+        this.endpoint = "vote_get";
     };
     initFromSavedBallot(savedBallotInfo) {
         super.initFromSavedBallot(savedBallotInfo);
         this.currentlySelectedResponse = savedBallotInfo.currentlySelectedResponse;
-        this.submittedResponse = savedBallotInfo.submittedResponse;
     };
     init() {
         super.init();
     	this.currentlySelectedResponse = null;
-        this.submittedResponse = null;  // this is only given a value when vote submitted
     };
     makeSavedBallotObj() {
         var savedBallotInfo = super.makeSavedBallotObj();
         savedBallotInfo.currentlySelectedResponse = this.currentlySelectedResponse;
-        savedBallotInfo.submittedResponse = this.submittedResponse;
         return savedBallotInfo;
     };
     hasResponse() {
@@ -378,12 +413,10 @@ class SingleChoiceBallot extends Ballot {
     };
     setCurrentlySelectedResponse(opt) {
         userActive();
-        if (!(this.submittedResponse || this.theQuestion.closed)) {
-            this.currentlySelectedResponse = opt;
-            this.saveToLocalStorage();
-        }
-        // otherwise, if this is already voted, can't change response
-        // or, if it's closed, it's fruitless to try to pick a response
+        if (this.theQuestion.closed) return;  // fruitless to pick a response
+        if (this.state != Ballot.UNDECIDED_STATE) return;
+        this.currentlySelectedResponse = opt;
+        this.saveToLocalStorage();
     };
     classForOption(text) {
         if (text == this.currentlySelectedResponse) {
@@ -396,29 +429,28 @@ class SingleChoiceBallot extends Ballot {
     voteConfirmingPrompt() {
         return "Do you want to vote " + this.currentlySelectedResponse + " on the question " + this.theQuestion.text;
     };
-    submitVote() {
-        userActive();
-        this.submittedResponse = this.currentlySelectedResponse;
+    generatePayload() {
+        this.setState(Ballot.DECIDED_STATE);
         var responseChit = this.chitForResponse(this.currentlySelectedResponse);
-        let payload = { meChit: this.personalChit.getMessageText(),
+        return { meChit: this.personalChit.getMessageText(),
                     meChitSigned: this.personalChit.signedMessageText,
                     responseChit: responseChit.getMessageText(),
                     responseChitSigned: responseChit.signedMessageText,
                      ranking: 0 };
+    };
+    submitVote() {
+        userActive();
+        let payload = this.generatePayload();
+        this.setState(Ballot.SUBMITTED_STATE);
         let url = "ballot/" + this.theQuestion.id + "/vote";
         let promise = axios.post(url, payload);
         promise.then( response => this.processVoteResponse(response) )
             .catch(error => this.processVoteError(error));
     };
-    processVoteResponse(response) {
-        this.voteAcknowledged = true;
-        this.saveToLocalStorage();
-        this.verifyVote();
-    };
     processVoteError(error) {
         console.log(error.response);
         console.log(error.response.status);
-        this.submittedResponse = null;
+        this.setState(Ballot.DECIDED_STATE);
         if (error.response.status == 410) {
             voterApp.checkForNewQuestions();
             alert("Unfortunately, this question was closed before you tried to vote, thus your vote was not counted.");
@@ -428,11 +460,8 @@ class SingleChoiceBallot extends Ballot {
             alert("There was some problem with submitting your vote to the CTF.");
         }
     };
-    iVoted() {
-        return (this.submittedResponse != null);
-    };
     processVerificationData(response) {
-        var responseChit = this.chitForResponse(this.submittedResponse);
+        var responseChit = this.chitForResponse(this.currentlySelectedResponse);
         this.verificationMessage = '';
         var responseFound = false;
         var report = response.data;
@@ -466,7 +495,7 @@ class SingleChoiceBallot extends Ballot {
 			            return;
 		            }
 		            var responseInReport = record['response'];
-		            if (responseInReport == this.submittedResponse) {
+		            if (responseInReport == this.currentlySelectedResponse) {
 			            responseFound = true;
 		            }
                     else {
@@ -478,6 +507,7 @@ class SingleChoiceBallot extends Ballot {
 	    }
 	    if (this.iVoted() == responseFound) {
 	        if (this.iVoted()) {
+	            this.setState(Ballot.VERIFIED_STATE);
     	        this.verificationMessage = 'Verified!';
     	    }
     	    else {
@@ -493,6 +523,7 @@ class SingleChoiceBallot extends Ballot {
 class RankedChoiceBallot extends Ballot {
     constructor(question, ballotKey, savedBallotInfo) {
         super(question, ballotKey, savedBallotInfo);
+        this.endpoint = "vote_get_rank";
     };
     initFromSavedBallot(savedBallotInfo) {
         super.initFromSavedBallot(savedBallotInfo);
@@ -507,8 +538,6 @@ class RankedChoiceBallot extends Ballot {
             var obj = savedBallotInfo.unrankedChoices[j];
             this.unrankedChoices.push(this.theQuestion.responseOptionForText(obj.text));
         }
-        this.acks = savedBallotInfo.acks;
-        this.voteSubmissionAttempted = savedBallotInfo.voteSubmissionAttempted;
     };
     init() {
         super.init();
@@ -518,15 +547,11 @@ class RankedChoiceBallot extends Ballot {
     	for (j = 0; j < this.theQuestion.possibleResponses.length; ++j) {
     	    this.unrankedChoices.push(this.theQuestion.possibleResponses[j]);
     	}
-        this.acks = {}; // acknowledgements received from server upon receiving each ranking in the vote
-        this.voteSubmissionAttempted = false;
     };
     makeSavedBallotObj() {
         var savedBallotInfo = super.makeSavedBallotObj();
         savedBallotInfo.rankedChoices = this.rankedChoices;
         savedBallotInfo.unrankedChoices = this.unrankedChoices;
-        savedBallotInfo.acks = this.acks;
-        savedBallotInfo.voteSubmissionAttempted = this.voteSubmissionAttempted;
         return savedBallotInfo;
     };
     hasResponse() {
@@ -541,45 +566,34 @@ class RankedChoiceBallot extends Ballot {
         str = str + " on the question " + this.theQuestion.text;
         return str;
     };
-    /* TODO: submit entire ranking in one message
-        This is a messy source of potential bugs-- having to keep track of which messages have been
-        acknowledged, and answering the question "did I successfully submit the vote or not?"
-        Try changing the endpoint to accept an Array
-    */
+    generatePayload() {
+        this.setState(Ballot.DECIDED_STATE);
+            var j;
+            var array = [];
+            for (j = 0; j < this.rankedChoices.length; ++j) {
+                var choice = this.rankedChoices[j];
+                var responseChit = this.chitForResponse(choice.getText());
+                let payload = { meChit: this.personalChit.getMessageText(),
+                        meChitSigned: this.personalChit.signedMessageText,
+                        responseChit: responseChit.getMessageText(),
+                        responseChitSigned: responseChit.signedMessageText,
+                         ranking: j };
+                array.push(payload);
+            }
+            return array;
+    };
     submitVote() {
         userActive();
-        var j;
-        this.voteSubmissionAttempted = true;
-        for (j = 0; j < this.rankedChoices.length; ++j) {
-            var choice = this.rankedChoices[j];
-            var responseChit = this.chitForResponse(choice.getText());
-            let payload = { meChit: this.personalChit.getMessageText(),
-                    meChitSigned: this.personalChit.signedMessageText,
-                    responseChit: responseChit.getMessageText(),
-                    responseChitSigned: responseChit.signedMessageText,
-                     ranking: j };
-            let url = "ballot/" + this.theQuestion.id + "/vote";
-            let promise = axios.post(url, payload);
-            promise.then( response => this.processVoteResponse(response) )
+        let array = this.generatePayload();
+        this.setState(Ballot.SUBMITTED_STATE);
+        let url = "ballot/" + this.theQuestion.id + "/vote_rank";
+        let promise = axios.post(url, array);
+        promise.then( response => this.processVoteResponse(response) )
                 .catch(error => this.processVoteError(error));
-        }
-    };
-    processVoteResponse(response) {
-        this.acks[response.data] = response.status;
-        if (this.allVoteRanksAcknowledged()) {
-            this.voteAcknowledged = true;
-            this.saveToLocalStorage();
-            this.verifyVote();
-        }
-    };
-    iVoted() {
-        return this.voteSubmissionAttempted;
+
     };
     canEditResponses() {
         return !(this.iVoted() || this.theQuestion.closed);
-    };
-    allVoteRanksAcknowledged() {
-        return (Object.keys(this.acks).length == this.rankedChoices.length);
     };
     processVerificationData(response) {
         var responseChits = [];
@@ -629,9 +643,10 @@ class RankedChoiceBallot extends Ballot {
                     }
             }
 	    }
-	    if (this.voteSubmissionAttempted) {
+	    if (this.state != Ballot.UNDECIDED_STATE) {
     	    if (responsesFound.every((item) => item)) {
     	        this.verificationMessage = 'Verified!';
+    	        this.setState(Ballot.VERIFIED_STATE);
 	        }
 	        else {
 	            this.verificationMessage = 'Not all items in ranking verified.';
@@ -1051,7 +1066,16 @@ var voterApp = new Vue({
             let fields = itemToMoveId.split('_', 2);
             let q = this.questionForId(fields[0]);
             q.ballot.addChoice(fields[1]);   // only works for ranking
-        }
+        },
+        copyURL: function(ev) {
+            userActive();
+            let fields = ev.target.id.split('_');
+            let quid = fields[1];
+            urlFieldId = 'url_' + quid;
+            var copyText = document.getElementById(urlFieldId);
+            copyText.select();
+            document.execCommand("copy");
+        },
     },
 });
 

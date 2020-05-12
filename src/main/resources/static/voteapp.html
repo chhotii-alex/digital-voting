@@ -8,7 +8,7 @@
     <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
     <script src="googclosure.js"></script>
     <script src="cookie.js"></script>
-    <script src="question.js"></script>
+    <script src="question.js?version=2"></script>
     <script src="util.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
 <body>
@@ -102,6 +102,29 @@ gPageLoadQuestions = ##QUESTIONS##;
                 <button v-on:click="question.ballot.vote()" class="bigbutton">
                 Submit Vote
                 </button>
+                <button v-on:click="question.ballot.voteURL()" class="bigbutton" >
+                    Vote Through Other Browser
+                </button>
+                <br/>
+                <span v-if="question.ballot.voteSubmissionURL" >
+                    <textarea :id="'url_'+question.id" readonly="readonly"
+                              style="width:100%;height:auto;resize:none;border:none;"
+                        >{{ question.ballot.voteSubmissionURL }}</textarea>
+                    <button v-on:click="copyURL" :id="'copy_'+question.id" class="borderless">
+                        <i class="fa fa-clone" aria-label="copy" :id="'copyicon_'+question.id" ></i>
+                        Copy URL
+                    </button>
+                    <br/>
+                    <i>
+                        You may submit this vote by copying this URL and pasting it into another
+                        browser. You will not need to be logged in. You may go through a proxy server to
+                        obscure your IP address.
+                    </i>
+                    <br/>
+                    <button v-on:click="question.ballot.otherBrowserDone()" class="bigbutton" >
+                        Done submitting from other browser!
+                    </button>
+                </span>
             </div>
             <div v-if="question.ballot.iVoted()">
                 <button v-on:click="question.ballot.verifyVote()" class="bigbutton">
@@ -123,6 +146,6 @@ gPageLoadQuestions = ##QUESTIONS##;
         </button>
     </div>
 </div>
-<script src="voting.js"></script>
+<script src="voting.js?version=3"></script>
 </body>
 </html>
