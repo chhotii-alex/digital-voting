@@ -45,6 +45,21 @@
         padding: 10px;
         margin: 10px;
     }
+    .groove {
+        border-style: groove;
+        padding: 10px;
+        margin: 10px;
+    }
+    .outset {
+        border-style: outset;
+        padding: 10px;
+        margin: 10px;
+    }
+    .inset {
+        border-style: inset;
+        padding: 10px;
+        margin: 10px;
+    }
     button.choice {
         border: none;
         padding: 5px;

@@ -663,6 +663,13 @@ class RankedChoiceBallot extends Ballot {
                 return;
             }
         }
+        for (j = 0; j < this.rankedChoices.length; ++j) {
+            if (this.rankedChoices[j].text == optionText) {
+                this.moveWithinRanked(index, j);
+                return;
+            }
+        }
+
     };
     moveRankingUp(optionText) {
         userActive();
@@ -703,6 +710,20 @@ class RankedChoiceBallot extends Ballot {
         this.rankedChoices.splice(optionIndex, 1);
         this.unrankedChoices.push(option);
     };
+    moveWithinRanked(displacedOptionIndex, insertedOptionIndex) {
+        var insertedOption = this.rankedChoices[insertedOptionIndex];
+        if (displacedOptionIndex >= this.rankedChoices.length) {
+            displacedOptionIndex = this.rankedChoices.length - 1;
+        }
+        if (displacedOptionIndex < insertedOptionIndex) {
+            this.rankedChoices.splice(displacedOptionIndex, 0, insertedOption);
+            this.rankedChoices.splice((insertedOptionIndex+1) , 1);
+        }
+        else {
+            this.rankedChoices.splice(insertedOptionIndex, 1);
+            this.rankedChoices.splice(displacedOptionIndex, 0, insertedOption);
+        }
+    };
     insertChoiceBefore(insertedOptionText, displacedOptionText) {
         userActive();
         if (insertedOptionText == displacedOptionText) { return; }
@@ -715,24 +736,25 @@ class RankedChoiceBallot extends Ballot {
             if (this.rankedChoices[j].text == displacedOptionText) {
                 displacedOption = this.rankedChoices[j];
                 displacedOptionIndex = j;
+                break;
             }
         }
         for (j = 0; j < this.rankedChoices.length; ++j) {
             if (this.rankedChoices[j].text == insertedOptionText) {
                 insertedOption = this.rankedChoices[j];
                 insertedOptionIndex = j;
+                break;
             }
         }
         if (insertedOption) {  // we are rearranging within the list of ranked choices
-            this.rankedChoices.splice(displacedOptionIndex, 0, insertedOption);
-            this.rankedChoices.splice(
-                (displacedOptionIndex<insertedOptionIndex)?(insertedOptionIndex+1):insertedOptionIndex , 1);
+            this.moveWithinRanked(displacedOptionIndex, insertedOptionIndex);
         }
         else {  // inserted an unranked in at a specific place
             for (j = 0; j < this.unrankedChoices.length; ++j) {
                 if (this.unrankedChoices[j].text == insertedOptionText) {
                     insertedOption = this.unrankedChoices[j];
                     insertedOptionIndex = j;
+                    break;
                 }
             }
             if (insertedOption) {
@@ -1007,6 +1029,21 @@ var voterApp = new Vue({
             else if (key == "ArrowRight") {
                 this.deleteWithId(targetId);
             }
+            else if (!isNaN(key)) {
+                q.ballot.insertChoiceAt(optionText, key);
+            }
+        },
+        optionDown: function(ev) {
+            userActive();
+            let fields = ev.target.id.split('_', 3);
+            let q = this.questionForId(fields[1]);
+            q.ballot.moveRankingDown(fields[2]);
+        },
+        optionUp: function(ev) {
+            userActive();
+            let fields = ev.target.id.split('_', 3);
+            let q = this.questionForId(fields[1]);
+            q.ballot.moveRankingUp(fields[2]);
         },
         clickUnselected: function(ev) {
             userActive();

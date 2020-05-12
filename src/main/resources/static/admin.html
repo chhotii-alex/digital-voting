@@ -14,12 +14,16 @@
 </head>
 <body>
 <link rel="stylesheet" type="text/css" href="voting.css" >
+<h1>
+    The On-line Digital Voting Administration Page
+</h1>
 <div id="adminapp">
     <form action="logout"  >
         Welcome, {{ name }}
         <input type="submit" value="Log Out" class="loginbutton" >
     </form>
     <p/>
+    <a href="/landing">Return to Main Page</a>
     <div v-show="admin">
         <span v-show="showingUsers" >
             <b>Users:</b><table>
