@@ -330,8 +330,10 @@ class Ballot {
         return "voteConfirmingPrompt() not implemented in this Ballot class";
     }
     vote() {
+        userActive();
         let prompt = this.voteConfirmingPrompt();
         if (!confirm(prompt)) { return; }
+        userActive();
         this.submitVote();
     };
     submitVote() {
@@ -341,6 +343,7 @@ class Ballot {
         return false;
     };
     verifyVote() {
+        userActive();
         let url = "ballot/" + this.theQuestion.id + "/verify";
         let promise = axios.get(url);
         promise.then( response => this.processVerificationData(response) )
@@ -374,6 +377,7 @@ class SingleChoiceBallot extends Ballot {
         return this.currentlySelectedResponse;
     };
     setCurrentlySelectedResponse(opt) {
+        userActive();
         if (!(this.submittedResponse || this.theQuestion.closed)) {
             this.currentlySelectedResponse = opt;
             this.saveToLocalStorage();
@@ -393,6 +397,7 @@ class SingleChoiceBallot extends Ballot {
         return "Do you want to vote " + this.currentlySelectedResponse + " on the question " + this.theQuestion.text;
     };
     submitVote() {
+        userActive();
         this.submittedResponse = this.currentlySelectedResponse;
         var responseChit = this.chitForResponse(this.currentlySelectedResponse);
         let payload = { meChit: this.personalChit.getMessageText(),
@@ -542,6 +547,7 @@ class RankedChoiceBallot extends Ballot {
         Try changing the endpoint to accept an Array
     */
     submitVote() {
+        userActive();
         var j;
         this.voteSubmissionAttempted = true;
         for (j = 0; j < this.rankedChoices.length; ++j) {
@@ -634,6 +640,7 @@ class RankedChoiceBallot extends Ballot {
 	    }
 	};
     addChoice(optionText) {
+        userActive();
         var j;
         for (j = 0; j < this.unrankedChoices.length; ++j) {
             if (this.unrankedChoices[j].text == optionText) {
@@ -644,6 +651,7 @@ class RankedChoiceBallot extends Ballot {
         }
     };
     insertChoiceAt(optionText, index) {
+        userActive();
         --index;
         if (index < 0) { index = 0; }
         if (index > this.rankedChoices.length) { index = this.rankedChoices.length; }
@@ -657,6 +665,7 @@ class RankedChoiceBallot extends Ballot {
         }
     };
     moveRankingUp(optionText) {
+        userActive();
         var j;
         for (j = 1; j < this.rankedChoices.length; ++j) {
             if (this.rankedChoices[j].text == optionText) {
@@ -668,6 +677,7 @@ class RankedChoiceBallot extends Ballot {
         }
     };
     moveRankingDown(optionText) {
+        userActive();
         var j;
         for (j = 0; (j+1) < this.rankedChoices.length; ++j) {
             if (this.rankedChoices[j].text == optionText) {
@@ -679,6 +689,7 @@ class RankedChoiceBallot extends Ballot {
         }
     };
     deleteRankedChoice(optionText) {
+        userActive();
         var option = null;
         var optionIndex = 0;
         var j;
@@ -693,6 +704,7 @@ class RankedChoiceBallot extends Ballot {
         this.unrankedChoices.push(option);
     };
     insertChoiceBefore(insertedOptionText, displacedOptionText) {
+        userActive();
         if (insertedOptionText == displacedOptionText) { return; }
         var displacedOption = null;
         var displacedOptionIndex = 0;
@@ -743,6 +755,7 @@ var voterApp = new Vue({
         isKeyInfoKnown: false,
     },
     mounted() {
+        userActive();
         this.$data.username = getUser();
         let url = "voters/" + this.$data.username;
         let aPromise = axios.get(url);
@@ -816,12 +829,14 @@ var voterApp = new Vue({
             }
         },
         checkForNewQuestions: function() {  // from voter's POV: questions that they can vote on now
+            userActive();
             let url = "ballots/";
             let aPromise = axios.get(url);
             aPromise.then(response => this.processOpenQuestions(response.data),
                 error => handleQueryError(error));
         },
         startShowingOldQuestions: function() {
+            userActive();
             let ids = getArchivedBallotIdentifiers();
             var i;
             for (i = 0; i < ids.length; ++i) {
@@ -890,6 +905,7 @@ var voterApp = new Vue({
             this.verifyAllNow();
         },
         verifyAll: function() {
+            userActive();
             this.$data.votableQuestions.forEach( q => {
                 q.ballot.verifyVote();
             });
@@ -913,6 +929,7 @@ var voterApp = new Vue({
         },
         // Methods for handling choosing and re-ordering ranked choice:
         drag: function(ev) {
+            userActive();
             ev.dataTransfer.setData("text", ev.target.id);
         },
         allowDrop: function(ev) {
@@ -927,6 +944,7 @@ var voterApp = new Vue({
         },
         dropInsert: function(ev) {
             ev.preventDefault();
+            userActive();
             let itemToMoveId = ev.dataTransfer.getData("text");
             var fields = itemToMoveId.split('_', 2);
             let quid1 = fields[0];
@@ -943,6 +961,7 @@ var voterApp = new Vue({
         },
         dropDelete: function(ev) {
             ev.preventDefault();
+            userActive();
             let itemToMoveId = ev.dataTransfer.getData("text");
             this.deleteWithId(itemToMoveId);
         },
@@ -954,6 +973,7 @@ var voterApp = new Vue({
             q.ballot.deleteRankedChoice(removedOption);
         },
         keyOnUnselected: function(ev) {
+            userActive();
             let key = ev.key;
             let targetId = ev.target.id;
             let fields = targetId.split('_', 2);
@@ -968,6 +988,7 @@ var voterApp = new Vue({
             }
         },
         keyOnSelected: function(ev) {
+            userActive();
             let key = ev.key;
             let targetId = ev.target.id;
             let fields = targetId.split('_', 2);
@@ -988,6 +1009,7 @@ var voterApp = new Vue({
             }
         },
         clickUnselected: function(ev) {
+            userActive();
             let itemToMoveId = ev.target.id;
             let fields = itemToMoveId.split('_', 2);
             let q = this.questionForId(fields[0]);

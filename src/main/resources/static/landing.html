@@ -12,11 +12,13 @@
 <link rel="stylesheet" type="text/css" href="voting.css" >
 <script>
 function showChangePassword() {
+        userActive();
         elm = document.getElementById("changepassword");
         elm.hidden = null;
 }
 
 function checkNewPasswords(e) {
+    userActive();
     var enableSubmit = true;
     if (document.getElementById("password1").value.length < 8) {
         enableSubmit = false;
@@ -52,7 +54,7 @@ function checkNewPasswords(e) {
         <b>Name:</b><span class="roomy">{{ name }}</span>
         <b>Email:</b><span class="roomy">{{ email }}</span>  <!-- displays the EFFECTIVE email address here (which may be oldEMail if not confirmed) -->
         <div v-show="!isShowingEdit" >
-            <button class="loginbutton roomy" v-on:click="isShowingEdit=true" >Edit Name and Email</button>
+            <button class="loginbutton roomy" v-on:click="showAccountEditing" >Edit Name and Email</button>
         </div>
         <div v-show="isShowingEdit" >
 

@@ -19,3 +19,25 @@ function handleQueryError(error) {
             }
             console.log(error);
 }
+
+gLoginTimeoutToken = null;
+gFinalLogoutTimerToken = null;
+
+gUserInactivityWarningTime = 1000*60*60*8;   // 8 hours
+gPostWarningLogoutTime = 1000*60*5;      // 5 minutes
+
+function userActive() {
+    if (gLoginTimeoutToken) {
+        clearTimeout(gLoginTimeoutToken);
+        gLoginTimeoutToken = null;
+    }
+    if (gFinalLogoutTimerToken) {
+        clearTimeout(gFinalLogoutTimerToken);
+        gFinalLogoutTimerToken = null;
+    }
+    gLoginTimeoutToken = setTimeout(inactivityTimeout, gUserInactivityWarningTime);
+}
+
+function inactivityTimeout() {
+    window.location.href = "/inactivity.html";
+}

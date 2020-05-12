@@ -280,7 +280,6 @@ public class LoginController extends APIController {
         }
         if (isAutoPrivilegingEveryone()) {  // FOR DEMO ONLY!!!
             v.setAllowedToVote(true);
-            v.setAdmin(true);
             voterListManager.updateVoter(v);
         }
         if (emailSender.isConfiguredForEmail()) {

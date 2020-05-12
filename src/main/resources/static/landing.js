@@ -14,6 +14,7 @@ var landingApp = new Vue({
     mounted() {
         this.$data.username = getUser();
         this.getUserInfo();
+        userActive();
     },
     methods: {
         getUserInfo: function() {
@@ -35,7 +36,12 @@ var landingApp = new Vue({
             }
             this.$data.newEmail = response.data.email;  // email most recently entered will be in the email field
         },
+        showAccountEditing: function() {
+            userActive();
+            this.$data.isShowingEdit = true;
+        },
         saveEdits: function() {
+            userActive();
             let url = "voters/" + this.$data.username;
             let editedVoter = { name:this.$data.newName, email:this.$data.newEmail  };
             let promise = axios.patch(url, editedVoter);
@@ -47,7 +53,7 @@ var landingApp = new Vue({
         processUpdateResponse: function(response) {
             this.getUserInfo();
             this.$data.isShowingEdit = false;
-        }
+        },
     },
     computed: {
         canSaveEdits: function() {
@@ -60,5 +66,13 @@ var landingApp = new Vue({
             if (!isEmailValid(this.$data.newEmail)) { dataIsValid = false; }
             return (dataHasChanged && dataIsValid);
         }
+    },
+    watch: {
+        newName: function() {
+            userActive();
+        },
+        newEmail: function() {
+            userActive();
+        },
     },
 });

@@ -112,6 +112,7 @@ class AdministratableQuestion extends Question {
         }
     }
     canBeSaved() {
+        userActive();
         if (!this.canBeEdited()) { return false; }
         if (this.text.length < 1) { return false; }
         if (this.possibleResponses.length < 2) { return false; }
@@ -128,6 +129,7 @@ class AdministratableQuestion extends Question {
         return true;
     }
     saveMe() {
+        userActive();
         var promise;
         this.trimSpaces();
         if (this.original) {
@@ -163,9 +165,11 @@ class AdministratableQuestion extends Question {
         return this.postable;
     }
     postMe() {
+        userActive();
         if (!this.canBePosted()) { return; }
         let prompt = "Are you sure you want to start polling on this question now: " + this.text;
         let response = confirm(prompt);
+        userActive();
         if (response) {
             this.post();
         }
@@ -188,9 +192,11 @@ class AdministratableQuestion extends Question {
         return this.closable;
     }
     closeMe() {
+        userActive();
         if (!this.canBeClosed()) { return; }
         let prompt = "Are you sure you want to END polling on this question now: " + this.text;
         let response = confirm(prompt);
+        userActive();
         if (response) {
             let url = "questions/" + this.original.id + "/close";
             let promise = axios.patch(url, this);
@@ -206,9 +212,11 @@ class AdministratableQuestion extends Question {
         return (this.status == 'new');
     }
     deleteMe() {
+        userActive();
         if (!this.canBeDeleted()) { return; }
         let prompt = "Delete question?   " + this.text;
         let response = confirm(prompt);
+        userActive();
         if (response) {
             if (this.original) {
                 let url = "questions/" + this.original.id + "/delete";
@@ -245,20 +253,26 @@ class Voter {
         this.admin = obj.admin;
     };
     grantVoting() {
+        userActive();
         this.allowedToVote = true;
         this.savePrivChanges();
     }
     revokeVoting() {
+        userActive();
         this.allowedToVote = false;
         this.savePrivChanges();
     }
     grantAdmin() {
+        userActive();
         this.admin = true;
         this.savePrivChanges();
     }
     revokeAdmin() {
+        userActive();
         let prompt = "Are you sure you want to revoke admin privileges from " + this.name + "?";
+        userActive();
         let response = confirm(prompt);
+        userActive();
         if (response) {
             this.admin = false;
             this.savePrivChanges();
@@ -297,6 +311,7 @@ var adminApp = new Vue({
         updateTimerToken: '',
     },
     mounted() {
+        userActive();
         this.$data.username = getUser();
         let url = "voters/" + this.$data.username;
         let aPromise = axios.get(url);
@@ -304,6 +319,7 @@ var adminApp = new Vue({
     },
     watch: {
         showOldQuestions: function(val) {
+            userActive();
             this.fetchQuestions();  // re-fetch when the filter changes
         },
     },
@@ -370,6 +386,7 @@ var adminApp = new Vue({
             aPromise.then(response => this.processQuestionList(response), error => handleQueryError(error));
         },
         startRepeatedlyUpdatingQuestions: function() {
+            userActive();
             this.fetchQuestions();
             if (this.$data.updateTimerToken) {
                 clearInterval(this.$data.updateTimerToken);
@@ -378,6 +395,7 @@ var adminApp = new Vue({
             this.$data.updateTimerToken = setInterval( () => this.fetchQuestions(), 30*1000);
         },
         newQuestionSingle: function(text=null) {
+            userActive();
             let item = new AdministratableQuestion();
             if ((typeof text) == "string" ) {
                 item.text = text;
@@ -389,6 +407,7 @@ var adminApp = new Vue({
             return item;
         },
         newQuestionRanked: function(text=null) {
+            userActive();
             let item = new AdministratableQuestion();
             item.type = Question.CountingTypeRanked;
             if ((typeof text) == "string" ) {
@@ -402,6 +421,7 @@ var adminApp = new Vue({
             this.$data.allquestions.splice(index, 1);
         },
         fetchUsers: function() {
+            userActive();
             let url = "voters/";
             let promise = axios.get(url);
             promise.then(response => this.processUserList(response), error => handleQueryError(error));
@@ -409,7 +429,6 @@ var adminApp = new Vue({
         processUserList: function(response) {
             this.$data.showingUsers = true;
             this.$data.userRefreshTime = new Date();
-            console.log(response.data);
             this.$data.allusers = [];
             var i;
             for (i = 0; i < response.data.length; ++i) {

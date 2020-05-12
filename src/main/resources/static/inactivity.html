@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to the Digital Voting Platform</title>
+    <script src="util.js"></script>
+</head>
+<body>
+    You haven't done anything on this site in hours! I'm going to log you out soon if you do nothing.
+If you don't want to be logged out, please <a href="/landing.html">click here to return to the main page</a>.
+<script>
+    gLogoutTimer = setTimeout(logout, gPostWarningLogoutTime);
+
+    function logout() {
+        window.location.href = "/logout";
+    }
+
+</script>
+</body>
+</html>
