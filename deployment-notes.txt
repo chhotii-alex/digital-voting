@@ -12,6 +12,8 @@ Here's the keystores I have (so I remember which is which):
 keystore.jks - signed by CA for external website
 keystore.p12 - self-signed for development
 
+Make sure ServerConfig.java not commented out.
+
 Build the jar
 In the terminal, in the base project directory:
 ./mvnw -Pdemo clean install

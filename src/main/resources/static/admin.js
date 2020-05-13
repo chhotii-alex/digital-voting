@@ -413,6 +413,7 @@ var adminApp = new Vue({
             if ((typeof text) == "string" ) {
                 item.text = text;
             }
+            item.addResponseOption(new ResponseOption("None of the Above"));
             this.$data.allquestions.push(item);
             return item;
         },
