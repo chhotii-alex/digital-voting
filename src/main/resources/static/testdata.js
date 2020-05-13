@@ -1,5 +1,17 @@
 var counter = 1;
 
+/* Fischer-Yates ftw */
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
+    }
+    return a;
+}
+
 function vote(items, q, array) {
     var v = Math.floor(Math.random() * 1000000);
     var j;
@@ -80,6 +92,12 @@ function doit() {
         ['None of the Above'],
      ]);
 
+/* Sometimes the result is supposed to depend on a coin toss. */
+     oneTest("minor office", [
+        ['Bruce'],
+        ['Lillian'],
+     ]);
+
 /*  This test case displays a rather pathological condition. At the end of the first round, neither
    Sam nor James has the majority. Since they have an equal number of first-choice ballots, it's random
    which one is chosen for elimination. With different coin flips, the winner can be either James or
@@ -92,6 +110,13 @@ function doit() {
         ['James'],
         ['None of the Above'],
         ['None of the Above'],
+        ['None of the Above'],
+     ]);
+
+ /* Does a simplified scenario display the pathology? */
+    oneTest("Who2", [
+        ['Bruce', 'Lillian'],
+        ['Lillian'],
         ['None of the Above'],
      ]);
 
@@ -117,4 +142,3 @@ function doit() {
     ]);
 
 }
-

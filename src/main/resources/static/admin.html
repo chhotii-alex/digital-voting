@@ -102,11 +102,15 @@
                                 </span>
                             </div>
                             <div v-if="question.isRankedChoice()" >
-                                <div v-for="(round, num) in question.results" >
-                                    Round {{ num+1 }}:
-                                    <span v-for="result in round">
-                                        {{ result.name }}: {{ result.votes }}
-                                    </span>
+                                <div v-for="outcome in question.outcomes" >
+                                    <div v-for="(round, num) in outcome.rounds" >
+                                        Round {{ num+1 }}:
+                                        <span v-for="result in round">
+                                            {{ result.name }}: {{ result.votes }}
+                                        </span>
+                                    </div>
+                                    <i><b>Winner:</b> {{ outcome.winner }} </i>
+                                    <hr/>
                                 </div>
                             </div>
                         </div>

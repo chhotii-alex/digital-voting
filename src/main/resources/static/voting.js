@@ -21,7 +21,7 @@ function setStorageData(key, data) {
     if (existingData) {
         existingData = JSON.parse(existingData);
     }
-    if (!existingData) {
+    if (!(existingData && (existingData instanceof Object) )) {
         existingData = {};
     }
     existingData[key] = data;
@@ -40,7 +40,9 @@ function getStorageData(key) {
       if (str) {
         try {
             let obj = JSON.parse(str);
-            return obj[key];
+            if (obj instanceof Object) {
+                return obj[key];
+            }
         }
         catch (err) {
             console.log("problem with json encoding?: " + str + " " + err);
