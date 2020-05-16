@@ -75,13 +75,19 @@
 
 	<profiles>
 		<profile>
-			<id>demo</id>
+			<id>dev</id>
 			<properties>
-				<activatedProperties>demo</activatedProperties>
+				<activatedProperties>dev</activatedProperties>
 			</properties>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
+		</profile>
+		<profile>
+			<id>demo</id>
+			<properties>
+				<activatedProperties>demo</activatedProperties>
+			</properties>
 		</profile>
 		<profile>
 			<id>prod</id>
@@ -90,4 +96,5 @@
 			</properties>
 		</profile>
 	</profiles>
+
 </project>

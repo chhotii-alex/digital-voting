@@ -1,6 +1,7 @@
 package com.jagbag.dvoting;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -13,12 +14,27 @@ import java.util.List;
 
 @Component
 public class StartupActions implements ApplicationRunner {
+
+    @Value( "${server.ssl.key-store}" )
+    public String keyStoreName;
+
+    @Value( "${base-url}" )
+    public String hostBaseURL;
+
+
     @Autowired
     private VoterListManager voterListManager;
     @Autowired
     protected EntityManagerFactory emf;
 
+    public void reportConfirgurationParameters() {
+        System.out.println("Configured for host: " + hostBaseURL);
+        System.out.println("Using keystore at path: " + keyStoreName);
+    }
+
     public void run(ApplicationArguments args) {
+        reportConfirgurationParameters();
+
         try {
             voterListManager.initialize();
         } catch (UnsupportedEncodingException e) {

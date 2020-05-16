@@ -37,7 +37,6 @@ public class CommonInfoController extends APIController {
      * Get a Question through the JSON API, given a question ID
      * @param quid - id of a Question
      * @return A Question object, with its ResponseOptions
-     * TODO: test getInfoOnQuestion
      */
     @GetMapping("/questions/{quid}")
     public Question getInfoOnQuestion(@RequestHeader HttpHeaders headers, @PathVariable int quid) {

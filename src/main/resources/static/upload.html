@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Digital Voting Platform</title>
+</head>
+<link rel="stylesheet" type="text/css" href="voting.css" >
+<body>
+<h1>
+    On-line Digital Voting Administration
+</h1>
+
+    Click on the button to upload a spreadsheet listing the people who should be allowed to vote.
+    The spreadsheet should be text-only, tab-delimited; i.e. don't try to upload an Excel document
+    as-is, export to tab-delimited and upload that.<br/>
+    There should be exactly two columns: email address, and name (real-person name not login name).<br/>
+    Accounts will be created for people who don't have accounts.<br/>
+
+    <form method="POST" enctype="multipart/form-data" action="/voters/upload">
+    <table>
+        <tr><td>File to upload:</td><td><input type="file" name="file" /></td></tr>
+        <tr><td></td><td><input type="submit" value="Upload" /></td></tr>
+    </table>
+    </form>
+
+</body>
+</html>
+

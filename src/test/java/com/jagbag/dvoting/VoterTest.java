@@ -1,6 +1,8 @@
 package com.jagbag.dvoting;
 
 import org.junit.jupiter.api.Test;
+
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,7 +41,13 @@ class VoterTest {
         Voter v = new Voter("Alex M", "alexm", "alex@jagbag.com");
         assertFalse(v.isActiveAccount());
         v.prepareForConfirmationEmail();
-        String emailText = v.processEmailText("##CODE##");
+        String emailText = null;
+        try {
+            emailText = v.processEmailText("##CODE##");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            fail("UnsupportedEncodingException");
+        }
         v.confirmEmail("rAnDOMwrongC0D3");
         assertFalse(v.isActiveAccount());
         assertFalse(v.isEmailConfirmed());
@@ -51,10 +59,16 @@ class VoterTest {
     @Test
     void processConfirmationEmailText() {
         Voter v = new Voter("David", "squiggles", "david@nowhere.org");
-        String emailText = v.processEmailText("##NAME##");
-        assertEquals(emailText, v.getName());
-        emailText = v.processEmailText("##USERNAME##");
-        assertEquals(emailText, v.getUsername());
+        String emailText = null;
+        try {
+            emailText = v.processEmailText("##NAME##");
+            assertEquals(emailText, v.getName());
+            emailText = v.processEmailText("##USERNAME##");
+            assertEquals(emailText, v.getUsername());
+        } catch (UnsupportedEncodingException e) {
+            fail("UnsupportedEncodingException");
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -63,7 +77,13 @@ class VoterTest {
         assertNull(v.getCurrentEmail());
         assertFalse(v.isActiveAccount());
         v.prepareForConfirmationEmail();
-        String emailText = v.processEmailText("##CODE##");
+        String emailText = null;
+        try {
+            emailText = v.processEmailText("##CODE##");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            fail("UnsupportedEncodingException");
+        }
         v.confirmEmail(emailText);
         assertNotNull(v.getCurrentEmail());
         assertTrue(v.isActiveAccount());

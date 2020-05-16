@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.*;
 
@@ -75,6 +76,11 @@ public class UserAdminController extends APIController {
         }
         v.setName(patchVoter.getName());
         if (!v.getCurrentEmail().equals(patchVoter.getEmail())) {
+            Voter possibleDuplicate = voterListManager.getForEmail(patchVoter.getEmail());
+            if (possibleDuplicate != null) {
+                // Nope! Don't allow an email address being used by another account.
+                return redirectToPage("dupemailerr.html");
+            }
             // email updating protocol
             v.submitEmailChange(patchVoter.getEmail());
             if (emailSender.isConfiguredForEmail()) {
@@ -136,5 +142,14 @@ public class UserAdminController extends APIController {
         voterListManager.removeVoter(v);
         return new ResponseEntity(HttpStatus.OK);
     }
+
+    @PostMapping("/voters/upload")
+    public ResponseEntity handleFileUpload(@RequestHeader HttpHeaders headers,
+                                   @RequestParam("file") MultipartFile file) {
+        loginManager.validateAdminUser(headers);
+        loginManager.parseUploadedVoterList(file);
+        return redirectToPage("/success.html");
+    }
+
 
 }

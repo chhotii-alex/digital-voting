@@ -5,6 +5,8 @@ import org.hibernate.annotations.NaturalId;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -109,6 +111,7 @@ public class Voter {
     public String getName() { return name; }
     public void setName(String newName) { this.name = newName; }
     public String getUsername() { return username; }
+    public void setUsername(String newUsername) { this.username = newUsername; } // TODO: test: does this wreak havoc?
     public String getEmail() { return email; }
     public void setEmail(String newEmail) { this.email = newEmail; }
     public String getOldEmail() { return oldEmail; }
@@ -153,6 +156,7 @@ public class Voter {
         if (code.equals(resetConfirmationCode)) {
             passwordHash = resetPasswordHash;
             passwordSalt = resetPasswordSalt;
+            resetConfirmationCode = null;
         }
     }
 
@@ -209,8 +213,9 @@ public class Voter {
      * @param text
      * @return
      */
-    public String processEmailText(String text) {
+    public String processEmailText(String text) throws UnsupportedEncodingException {
         text = text.replaceAll("##USERNAME##", getUsername());
+        text = text.replaceAll("##QUERYUSER##", URLEncoder.encode(getUsername(), StandardCharsets.UTF_8.toString()));
         text = text.replaceAll("##EMAIL##", getEmail());
         text = text.replaceAll("##OLDEMAIL##", getOldEmail());
         text = text.replaceAll("##NAME##", getName());

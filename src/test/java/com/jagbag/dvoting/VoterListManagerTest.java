@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.io.UnsupportedEncodingException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -75,7 +77,13 @@ class VoterListManagerTest {
         v = voterListManager.getForUsername(username);
         assertFalse(v.isActiveAccount());
         String phonyEmailTemplate = "##USERNAME##:message:##CODE##";
-        String phonyEmailText = v.processEmailText(phonyEmailTemplate);
+        String phonyEmailText = null;
+        try {
+            phonyEmailText = v.processEmailText(phonyEmailTemplate);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            fail("UnsupportedEncodingException");
+        }
         String[] fields = phonyEmailText.split(":");
         String confirmationCode = fields[2];
         assertEquals(fields[0], username);

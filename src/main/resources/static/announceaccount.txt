@@ -1,0 +1,19 @@
+Dear  ##NAME##,
+
+Welcome to the Digital On-line Voting Platform!
+
+You are on the list of authorized voters. Thus, an account has been created for you.
+
+Your username for logging in is ##USERNAME## .
+
+Here is a password that will work after you click on the link below:
+##PASS##
+
+Please click on this link to active the password into your account:
+<a href="##BASEURL##/reset?user=##QUERYUSER##&code=##RESET##">##BASEURL##/reset?user=##QUERYUSER##&code=##RESET##</a>
+
+You may then log in at <a href="##BASEURL##/login.html">##BASEURL##/login.html</a> to vote in upcoming
+elections.
+
+Sincerely,
+the Digital On-line Voting Platform

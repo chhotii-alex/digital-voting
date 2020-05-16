@@ -262,15 +262,26 @@ public class VoterListManager {
 
     /**
      * Persists any changes to a detached Voter object made prior to calling this
-     * @param a Voter, must be detached!
+     * @param v -- a Voter, must be detached!
      * @return whether writing to the database succeeded
      */
     public boolean updateVoter(Voter v) {
+        return updateVoters(Collections.singleton(v));
+    }
+
+    /**
+     * Persists any changes to a set of detached Voter objects made prior to calling this
+     * @param updatedVoters -- a Set of Voter, must be each be detached!
+     * @return whether writing to the database succeeded
+     */
+    public boolean updateVoters(Set<Voter> updatedVoters) {
         boolean success = true;
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
         try {
-            em.merge(v);
+            for (Voter v : updatedVoters) {
+                em.merge(v);
+            }
             em.getTransaction().commit();
         }
         catch (Exception ex) {

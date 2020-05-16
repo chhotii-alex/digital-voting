@@ -17,26 +17,15 @@ import org.springframework.web.bind.annotation.*;
 public class LoginController extends APIController {
     @Autowired private VoterListManager voterListManager;
 
-    @Value( "${base-url}" )
-    private String hostBaseURL;
-
     @Value( "${auto-priv-everyone:no}" )
     private String autoPrivilegeEveryone;
     public boolean isAutoPrivilegingEveryone() {
         return autoPrivilegeEveryone.equals("yes");
     }
 
-    /** Text template for the body of the email to be sent asking users to confirm their email address. */
-    @Value("classpath:static/confirmemail.html")
-    protected Resource confirmEmailTemplate;
-
     /** File containing the contents of the page sent users when they create a new account but need to confirm email */
     @Value("classpath:static/newawaitconfirm.html")
     protected Resource awaitConfirmPage;
-
-    /** Text template for the body of the reset password email. */
-    @Value("classpath:static/reset.html")
-    protected Resource resetEmailTemplate;
 
     /** File containing the login page */
     @Value("classpath:static/login.html")
@@ -127,7 +116,8 @@ public class LoginController extends APIController {
             return ResponseEntity.ok(message);
         }
         if (voterListManager.prepareForReset(v)) {
-            sendResetEmail(v);
+            loginManager.sendResetEmail(v);
+            // TODO: never return page from a POST; do some kind of redirection here
             return ResponseEntity.ok().body(textFromResource(checkEmailPage));
         }
         else {
@@ -260,21 +250,30 @@ public class LoginController extends APIController {
             if (v.isActiveAccount()) {
                 return redirectToPage(String.format("/dupnameerr.html?user=%s", formValue.get("user")));
             }
-            else {
-                // There's an account with that username, but it was never activated.
-                // Re-use the username for this person.
-                v.setPassword(formValue.get("password"));
-                v.setEmail(formValue.get("email"));
-                v.setName(formValue.get("name"));
-                v.invalidateConfirmationCode();
-                voterListManager.updateVoter(v);
+        }
+        if (v == null) {
+            v = voterListManager.getForEmail(formValue.get("email"));
+            if (v != null) {
+                if (v.isActiveAccount()) {
+                    return redirectToPage(String.format("/dupemailerr.html?email=%s", formValue.get("email")));
+                }
             }
+        }
+        if (v != null) {
+            // There's an account with that username or email, but it was never activated.
+            // Re-use the account for this person. TODO: test the scenario where user put in same email but new username.
+            v.setUsername(formValue.get("user"));
+            v.setPassword(formValue.get("password"));
+            v.setEmail(formValue.get("email"));
+            v.setName(formValue.get("name"));
+            v.invalidateConfirmationCode();
+            voterListManager.updateVoter(v);
         }
         if (v == null) {
             v = new Voter(formValue.get("name"), formValue.get("user"), formValue.get("email"));
             if (!voterListManager.addVoter(v, formValue.get("password"))) {
                 // This would be a wtf error.
-                // TODO: what would be the right way to log ?
+                // TODO: what would be the right way to log ? See https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-logging
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create new account");
             }
         }
@@ -283,7 +282,7 @@ public class LoginController extends APIController {
             voterListManager.updateVoter(v);
         }
         if (emailSender.isConfiguredForEmail()) {
-            if (!sendConfirmationEmail(v)) {
+            if (!loginManager.sendConfirmationEmail(v)) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not send confirmation email");
             }
             return redirectToPage("newawaitconfirm.html");
@@ -292,41 +291,6 @@ public class LoginController extends APIController {
             // If email is not available, turn off requiring confirmation of email. Activate immediately.
             voterListManager.activateAccountWithoutConfirm(v);
             return redirectToPage("createdaccount.html");
-        }
-    }
-
-    private boolean sendConfirmationEmail(Voter v) {
-        try {
-            String text = v.processEmailText(textFromResource(confirmEmailTemplate));
-            // TODO: how do we get the actual URL we're running at?
-            text = text.replaceAll("##BASEURL##", hostBaseURL);
-            emailSender.sendEmail(v.getEmail(), "please confirm your email", text);
-            return true;
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            // TODO: how to log errors here correctly?
-            return false;
-        }
-    }
-
-    /**
-     * Send the email to the user that allows them to reset their password.
-     * @param v - person whose password is being reset
-     * @return
-     */
-    protected boolean sendResetEmail(Voter v) {
-        try {
-            String text = v.processEmailText(textFromResource(resetEmailTemplate));
-            // TODO: how do we get the actual URL we're running at?
-            text = text.replaceAll("##BASEURL##", "http://localhost:8080");
-            emailSender.sendEmail(v.getEmail(), "your password reset", text);
-            return true;
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            // TODO: how to log errors here correctly?
-            return false;
         }
     }
 

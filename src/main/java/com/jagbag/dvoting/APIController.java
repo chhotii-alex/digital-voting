@@ -1,6 +1,7 @@
 package com.jagbag.dvoting;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,9 @@ import java.util.Map;
  * Thus, no guilt here for the lack of hypermedia HATEOAS links in any of the returned results.
  */
 public class APIController {
+    @Value( "${base-url}" )
+    public String hostBaseURL;
+
     /** See {@link LoginManager} */
     @Autowired
     protected LoginManager loginManager;
@@ -43,7 +47,7 @@ public class APIController {
      * @param myResource a file
      * @return a String containing the file's contents
      * */
-    protected String textFromResource(Resource myResource) throws IOException {
+    public static String textFromResource(Resource myResource) throws IOException {
         String text = new String(myResource.getInputStream().readAllBytes());
         return text;
     }

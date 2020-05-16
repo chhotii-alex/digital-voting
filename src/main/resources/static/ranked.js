@@ -124,6 +124,8 @@ function allEquivalentOrderings(a) {
     'universe'. Rather than report the blow-by-blow for each universe, I report one set of rounds for each
     distinct winner. Thus, I report only one scenario of the various possible coin-flipping scenarios that
     could arrive at each possible winner.
+
+    TODO: deal with "abstain"? See Ben's email?
 */
 function tabulateRankedChoiceResults(question, report) {
     let NOTA = "None of the Above"; // magic candidate that cannot be eliminated

@@ -8,7 +8,7 @@
     <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
     <script src="googclosure.js"></script>
     <script src="cookie.js"></script>
-    <script src="question.js"></script>
+    <script src="question.js"></script>  <!-- TODO: until we are much more code stable, put query strings on all external script imports to avoid caching -->
     <script src="util.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
 </head>
@@ -26,6 +26,7 @@
     <a href="/landing">Return to Main Page</a>
     <div v-show="admin">
         <span v-show="showingUsers" >
+            <a href="upload.html">Bulk upload of voter list...</a><br/>
             <b>Users:</b><table>
                 <thead><tr>
                     <th style="text-align:left">Name</th>
@@ -115,6 +116,7 @@
                             </div>
                         </div>
                         <span v-if="question.numVotersResponded || question.shouldShowResultsDetail" >
+                            <!-- TODO: button to download spreadsheet of votes -->
                             <b>Total number of voters who voted on this: </b> {{ question.numVotersResponded }}
                         </span>
                     </td>

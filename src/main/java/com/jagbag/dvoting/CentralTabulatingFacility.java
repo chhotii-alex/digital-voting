@@ -16,7 +16,6 @@ import java.security.interfaces.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// TODO: ranked choice voting is a REQUIREMENT
 /**
  * Implements the server end of the blind voting protocol.
  *

@@ -2,6 +2,7 @@ package com.jagbag.dvoting;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -14,9 +15,10 @@ import org.springframework.stereotype.Component;
  * to securely connect to that virtual host's SMTP server.
  */
 @Component("emailSender")
+@Profile("prod")
 public class SimpleEmailSender implements EmailSender {
     @Autowired
-    public JavaMailSender emailSender;
+    public JavaMailSender javaMailSender;
 
     @Value( "${email-enabled}" )
     private String emailEnabledProperty;
@@ -32,7 +34,7 @@ public class SimpleEmailSender implements EmailSender {
             message.setTo(email);
             message.setSubject(subject);
             message.setText(text);
-            emailSender.send(message);
+            javaMailSender.send(message);
         }
         else {
             System.err.println("Attempt to send email when we are not configured for email!");
