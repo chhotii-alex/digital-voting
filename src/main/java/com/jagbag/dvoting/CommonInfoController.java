@@ -72,6 +72,7 @@ public class CommonInfoController extends APIController {
                         "Parameter should be yes, no, or all");
         }
         for (Voter voter : voterListManager.voters()) {
+            /* TODO: option to see accounts that are not activated */
             if (voter.isActiveAccount()) {
                 if ((voter.isAllowedToVote() && includeCanVote) || (!voter.isAllowedToVote() && includeCannotVote)) {
                     results.add(voter);

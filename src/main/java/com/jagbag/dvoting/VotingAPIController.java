@@ -3,13 +3,15 @@ package com.jagbag.dvoting;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.minidev.json.JSONObject;  // TODO: are we linking an extraneous dependency to make this work?
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controller for endpoints for the actual process of voting.
@@ -51,11 +53,12 @@ public class VotingAPIController extends APIController {
 
     /* return public key and modulus */
     @GetMapping("/ballots/keys")
-    public String getKeys(@RequestHeader HttpHeaders headers) {
-        JSONObject obj = new JSONObject();
+    public String getKeys(@RequestHeader HttpHeaders headers) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, String> obj = new HashMap<String, String>();
         obj.put("public", ctf.getPublicExponent().toString(10));
         obj.put("modulus", ctf.getModulus().toString(10));
-        return obj.toString();
+        return objectMapper.writeValueAsString(obj);
     }
 
     /* return currently open questions */

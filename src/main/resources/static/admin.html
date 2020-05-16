@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Welcome to the Digital Voting administration page!</title>
+    <!-- TODO: use deployment version of Vue; see console for link to Vue deployment pointer -->
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
     <script src="googclosure.js"></script>
     <script src="cookie.js"></script>
-    <script src="question.js"></script>  <!-- TODO: until we are much more code stable, put query strings on all external script imports to avoid caching -->
-    <script src="util.js"></script>
+    <!-- TODO: when code is stable, take out query string from .js includes to speed client loading -->
+    <script src="question.js?version=2"></script>
+    <script src="util.js?version=2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
 </head>
 <body>
@@ -228,7 +230,7 @@
         </div>
     </div>
 </div>
-<script src="ranked.js"?version="2"></script>
+<script src="ranked.js?version=2"></script>
 <script src="admin.js?version=2"></script>
 </body>
 </html>
