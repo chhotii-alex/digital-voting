@@ -47,8 +47,18 @@ public class VotingAPIController extends APIController {
             return loginController.getLanding(headers);
         }
         String pageText = textFromResource(votingPageTemplate);
-        pageText = ctf.fillInVotingInfo(pageText);
+        pageText = fillInVotingInfo(pageText);
         return ResponseEntity.ok().body(pageText);
+    }
+
+    public String fillInVotingInfo(String pageText) throws JsonProcessingException {
+        pageText = pageText.replaceAll("##EXPONENT##", ctf.getPublicExponent().toString(10));
+        pageText = pageText.replaceAll("##MODULUS##", ctf.getModulus().toString(10));
+
+        String questionString = new ObjectMapper().writeValueAsString(ctf.votableQuestionList());
+        pageText = pageText.replaceAll("##QUESTIONS##", questionString);
+
+        return pageText;
     }
 
     /* return public key and modulus */

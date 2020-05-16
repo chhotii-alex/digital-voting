@@ -95,7 +95,7 @@ import java.util.regex.Pattern;
  * Separate endpoints are available to the client to request the signing of response chits and signing
  * the me chit&mdash; ballot/{quid}/sign and ballot/{quid}/signme respectively. These are signed by the CTF
  * itself or delegated to the Question respectively for signing, and then, later, for verifying.
- * On the client side, when a Voter receives a list of votalbe questions, each Question comes with the
+ * On the client side, when a Voter receives a list of votable questions, each Question comes with the
  * public key and modulus that will be used for signing the me chit. Each Chit chooses its secret k to
  * work with either the CTF's response-chit signing key or the Question's specific me-chit signing key,
  * depending on type of Chit.
@@ -123,6 +123,14 @@ public class CentralTabulatingFacility extends SigningEntity {
         postedQuestions = new HashMap();
     }
 
+    /**
+     * Looks for and returns the Question object with the given ID. Looks first in the in-memory
+     * store before consulting database, because a Question has some Transient state (i.e. not
+     * persisted to the database), relevant to posted (currently-polling) Questions; in particular
+     * the key that the Question uses for signing me-chits.
+     * @param quid a Question id
+     * @return  the corresponding Question object, or null if none such is found
+     */
     public Question lookUpQuestion(long quid) {
         Question theQuestion;
         theQuestion = postedQuestions.get(quid);
@@ -135,17 +143,23 @@ public class CentralTabulatingFacility extends SigningEntity {
         return theQuestion;
     }
 
-    /*
-    Each Voter who is currently of voting status may have a fixed number of response chits signed per question.
-    We keep track of the chits received so far for signing. We can re-sign something
-    previously signed (as it may have gotten lost on its way back to the client previously); however, if the number of
-    chits for a given voter on a given question exceeds the expected number, that's trouble, an apparent attempt at
-    ballot box stuffing.
-    For now the actual chits received for signing are saved in-memory only, not persisted to the database. Were the process
-    to go down, all the currently open Questions would be closed-- no more additional voting on those Question instances
-    allowed-- because we are not storing our private key (see above). So there's no point in keeping track across a
-    re-start.
-    TODO: maybe? save for posterity a record of what Voters had ballots signed for each Question.
+    /**
+     * Sign a chit corresponding to a particular response which has been submitted by a client in
+     * blinded for, for a particular Voter, on a particular Question.
+     * Each Voter who is currently of voting status may have a fixed number of response chits signed per question.
+     * We keep track of the chits received so far for signing. We can re-sign something that we know we
+     * previously signed (as it may have gotten lost on its way back to the client previously); however, if the number of
+     * chits for a given voter on a given question exceeds the expected number, that's trouble, an apparent attempt at
+     * ballot box stuffing.
+     * The chits received for signing are saved in-memory only, not persisted to the database. Were the process
+     * to go down, all the currently open Questions would be closed-- no more additional voting on those Question instances
+     * allowed-- because we are not storing our private key (see above). So there's no point in keeping track across a
+     * re-start.
+     * TODO: maybe? save for posterity a record of what Voters had ballots signed for each Question.
+     * @param blindedMessageText a string representing a very big number, encoding the blinded chit
+     * @param voter an object representing a person/account. Rejected if null, or not allowed to vote.
+     * @param quid the ID of the Question to which this response pertains
+     * @return signed, i.e. encrypted with CTF's private key, version of blinded chit
      */
     public synchronized String signResponseChit(String blindedMessageText, Voter voter, long quid) {
         if (voter == null || !voter.isAllowedToVote()) {
@@ -164,7 +178,8 @@ public class CentralTabulatingFacility extends SigningEntity {
         Set<String> blindedChits = blindedChitsPerQuestion.computeIfAbsent(quid, (x) -> new HashSet<String>());
         if (blindedChits.contains(blindedMessageText)) {
             // Same blinded chit submitted again for signing. That's fine. Maybe it didn't get back to the client before.
-            // Fall through to below conditional, re-calculate the signed chit and send (again),
+            // Fall through to below conditional, re-calculate the signed chit and send (again).
+            // Re-running the signing calculation will always produce the same result for a given chit.
         }
         else {
             if (blindedChits.size() >= theQuestion.numberOfAllowedChits()) {
@@ -177,6 +192,14 @@ public class CentralTabulatingFacility extends SigningEntity {
         return signText(blindedMessageText);
     }
 
+    /**
+     * Sign a chit with the given Question's private key; exactly ONE of these may be signed per
+     * Voter per Question.
+     * @param blindedMessageText a string representing a very big number, encoding the blinded chit
+     * @param voter an object representing a person/account. Rejected if null, or not allowed to vote.
+     * @param quid the ID of the Question for which this chit will be valid
+     * @return signed, i.e. encrypted with the Question's private key, version of blinded chit
+     */
     public synchronized String signMeChit(String blindedMessageText, Voter voter, long quid) {
         if (voter == null || !voter.isAllowedToVote()) {
             TroubleLogger.reportTrouble(String.format("Invalid voter trying to register ballot: %s", voter));
@@ -207,6 +230,23 @@ public class CentralTabulatingFacility extends SigningEntity {
         return theQuestion.signText(blindedMessageText);
     }
 
+    /**
+     * Receive only exactly that information required for particular vote, and, if it's valid, include
+     * it in the tally for the given Question.
+     * Note that for ranked-choice, there are multiple votes per question, one for each position in the
+     * ranking.
+     * @param quid the ID of the Question this vote pertains to
+     * @param vote encodes all the information required to vote (the actual response, and, for ranked-choice,
+     *             the ranking of this response), PLUS all the information required to validate that this
+     *             vote is valid: the plaintext and signed versions of chits for the question and the response
+     * @return an HttpStatus to report to the client: OK if the vote was tallied; otherwise an error status
+     *        with a clue regarding what went wrong.
+     *        BAD REQUEST if the data was malformed
+     *        NOT FOUND if there's no such question
+     *        GONE if the question was closed and thus not accepting additional votes
+     *        FORBIDDEN if the signature on either chit is invalid
+     *        INTERNAL SERVER ERROR if some wtf exception was thrown
+     */
     public synchronized HttpStatus receiveVoteOnQuestion(long quid, VoteMessage vote) {
         if (vote.meChit == null || vote.meChit.length() < 1) {
             TroubleLogger.reportTrouble("Empty me chit submitted");
@@ -255,6 +295,17 @@ public class CentralTabulatingFacility extends SigningEntity {
         }
     }
 
+    /**
+     * Save a vote to the database, so it will be included in the tally; only invoked when the
+     * vote has passsed the vetting in receiveVoteOnQuestion. The random numbers (chosen by the Voter's
+     * client program) in each chit are saved, so that when the list of votes is reported, the Voter's
+     * client program can verify that the ballot it cast was received and included in the results.
+     * @param q the Question on which this vote is cast
+     * @param voterIDChit a "me" chit-- specific to a specific Voter on a specific question
+     * @param responseChit chit containing the actual response ("yes" or "no", or a candidates's name, for example)
+     * @param ranking  For a ranked choice question, the position of this response in the ranking.
+     * @throws Exception  thrown if the client submitted malformed chit contents
+     */
     private synchronized void castVote(Question q, String voterIDChit, String responseChit, int ranking) throws Exception {
         long quid = q.getId();
         String response = null;
@@ -314,6 +365,13 @@ public class CentralTabulatingFacility extends SigningEntity {
         }
     }
 
+    /** Queries the database for and returns the list of Votes on a particular Question.
+     * Note that for a ranked-choice Question, this will be multiple Votes per Voter.
+     * Note also that there is no guaranteed order for the list of results. The client will sort these
+     * to aggregate per-Voter responses and sort by ranking.
+     * @param quid ID of the Question
+     * @return  all the valid votes tallied for this question
+     */
     public List<Vote> detailedTabulationForQuestion(long quid) {
         Question q = lookUpQuestion(quid);
         EntityManager em = emf.createEntityManager();
@@ -325,27 +383,35 @@ public class CentralTabulatingFacility extends SigningEntity {
         return list;
     }
 
+    /**
+     * Puts a Question in the polling state. Goes through the CTF because the CTF maintains a collection
+     * of currently-polling questions. N.B. does NOT persist the change to the database; the caller
+     * must merge q within a transaction.
+     * @param q Question to be posted to voters
+     * @throws NoSuchAlgorithmException thrown if the Question could not make a key pair for signing chits
+     */
     public void postQuestion(Question q) throws NoSuchAlgorithmException {
         q.post();
         postedQuestions.put(q.getId(), q);
     }
 
+    /**
+     * Takes a Question out of the polling state. Goes through the CTF because the CTF maintains a collection
+     * of currently-polling questions. N.B. does NOT persist the change to the database; the caller
+     * must merge q within a transaction.
+     * @param q Question to be removed from list of questions voters may vote on
+     */
     public void closeQuestion(Question q) {
         q.close();
         postedQuestions.remove(q.getId());
     }
 
+    /**
+     * Returns Questions that Voters may currently vote on, as a List
+     * @return the List of Questions currently in polling state
+     */
     public List<Question> votableQuestionList() {
         return new ArrayList(postedQuestions.values());
     }
 
-    public String fillInVotingInfo(String pageText) throws JsonProcessingException {
-        pageText = pageText.replaceAll("##EXPONENT##", this.getPublicExponent().toString(10));
-        pageText = pageText.replaceAll("##MODULUS##", this.getModulus().toString(10));
-
-        String questionString = new ObjectMapper().writeValueAsString(votableQuestionList());
-        pageText = pageText.replaceAll("##QUESTIONS##", questionString);
-
-        return pageText;
-    }
 }
