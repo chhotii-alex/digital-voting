@@ -1,0 +1,7 @@
+Dear ##NAME##,
+
+This is to inform you that ##PROXYNAME## turned down your request that they hold your proxy. You may
+wish to look for another person to hold your proxy in upcoming votes.
+
+Thank you,
+The Digital Voting Platform

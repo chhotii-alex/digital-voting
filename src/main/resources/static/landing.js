@@ -10,6 +10,12 @@ var landingApp = new Vue({
         newName: '',
         newEmail: '',
         newEmailNote: '',
+        canGrantProxy: false,
+        proxyHolder: null,
+        proxyAccepted: false,
+        selectedPotentialProxy: '',
+        potentialProxies: [],
+        acceptedProxyGrantees: [],
     },
     mounted() {
         this.$data.username = getUser();
@@ -23,9 +29,25 @@ var landingApp = new Vue({
             aPromise.then(response => this.processUserInfo(response), error => handleQueryError(error));
         },
         processUserInfo: function(response) {
+            console.log(response.data);
             this.$data.name = response.data.name;
             this.$data.email = response.data.currentEmail;  // may be oldEmail if new email not confirmed
             this.$data.allowedToVote = response.data.allowedToVote;
+            // Determine whether to show controls for asking s.o. to hold one's proxy
+            if (this.$data.allowedToVote) {  // only relevant for voters...
+                if (!response.data.acceptedProxyGrantees.length) {  // if you're not holding someone else's proxy...
+                    this.$data.canGrantProxy = true;
+                    this.fetchPotentialProxies();
+                }
+                this.$data.proxyHolder = response.data.proxyHolder;
+                this.$data.proxyAccepted = response.data.proxyAccepted;
+                this.$data.acceptedProxyGrantees = response.data.acceptedProxyGrantees;
+                var j;
+                for (j = 0; j < this.$data.acceptedProxyGrantees.length; ++j) {
+                    this.$data.acceptedProxyGrantees[j].url
+                        = "voting?behalf=" + encodeURIComponent(this.$data.acceptedProxyGrantees[j].username);
+                }
+            }
             this.$data.admin = response.data.admin;
             this.$data.newName = this.$data.name;
             if (response.data.email != response.data.currentEmail) {
@@ -42,7 +64,7 @@ var landingApp = new Vue({
         },
         saveEdits: function() {
             userActive();
-            let url = "voters/" + this.$data.username;
+            let url = "voters/" + encodeURIComponent(this.$data.username);
             let editedVoter = { name:this.$data.newName, email:this.$data.newEmail  };
             let promise = axios.patch(url, editedVoter);
             promise.then( response => this.processUpdateResponse(response) )
@@ -53,6 +75,44 @@ var landingApp = new Vue({
         processUpdateResponse: function(response) {
             this.getUserInfo();
             this.$data.isShowingEdit = false;
+        },
+        requestProxyHolder: function() {
+            userActive();
+            if (this.$data.selectedPotentialProxy) {
+                if (confirm("Request that " + this.$data.selectedPotentialProxy.name + " hold your proxy?")) {
+                    let url = "voters/requestproxy?proxy="
+                        + encodeURIComponent(this.$data.selectedPotentialProxy.username);
+                    let promise = axios.get(url);
+                    promise.then( response => this.processRequestResponse(response)).catch( error => handleQueryError(error));
+                }
+            }
+        },
+        processRequestResponse: function() {
+            this.getUserInfo();
+        },
+        fetchPotentialProxies: function() {
+            let url = "/pp";
+            let aPromise = axios.get(url);
+            aPromise.then(response => { this.$data.potentialProxies = response.data; },
+                            error => handleQueryError(error));
+        },
+        revokeProxy: function() {
+            userActive();
+            var prompt;
+            if (this.$data.proxyAccepted) {
+                prompt = "Revoke " + this.$data.proxyHolder.name + "'s holding of your proxy?";
+            }
+            else {
+                prompt = "Cancel the request that "  + this.$data.proxyHolder.name + " hold your proxy?";
+            }
+            if (!confirm(prompt)) {
+                return;
+            }
+            userActive();
+            let url = "voters/requestproxy";
+            let promise = axios.get(url);
+            promise.then( response => this.processRequestResponse(response)).catch( error => handleQueryError(error));
+
         },
     },
     computed: {
@@ -65,6 +125,9 @@ var landingApp = new Vue({
             if (this.$data.newEmail != this.$data.email) { dataHasChanged = true; }
             if (!isEmailValid(this.$data.newEmail)) { dataIsValid = false; }
             return (dataHasChanged && dataIsValid);
+        },
+        hasActiveProxyHolder: function() {
+            return (this.$data.proxyHolder && this.$data.proxyAccepted);
         }
     },
     watch: {

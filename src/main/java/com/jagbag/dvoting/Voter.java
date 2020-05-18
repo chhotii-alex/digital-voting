@@ -1,6 +1,7 @@
 package com.jagbag.dvoting;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.NaturalId;
 
 import java.io.UnsupportedEncodingException;
@@ -9,7 +10,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.validation.constraints.*;
 import javax.persistence.*;
@@ -35,7 +39,7 @@ import javax.xml.bind.DatatypeConverter;
  * Passwords are never saved in cleartext. Submitted passwords are concatenated with the (user-specific) salt,
  * hashed, and then compared with the password hash. This mean that reading the database does not give you the
  * information you would need to log in as someone else.
- * TODO: A Voter may assign their "proxy" to another Voter.
+ * A Voter may assign their "proxy" to another Voter.
  * Note: Hibernate is apparently not able to update the database from the previous schema to accommodate
  * this. Some kind of error trying to execute "alter table voter add column proxy_accepted boolean not null"
  * Manually running "alter table voter add column proxy_accepted boolean default FALSE not null" works.
@@ -60,8 +64,14 @@ import javax.xml.bind.DatatypeConverter;
  * VOTE here on Sandy's behalf
  * Same link but with a query paramter.
  * Voting page should announce whose proxy it's voting for.
- * Voting page submits chits for signing with the username not of the logged-in voter, but with the proxy grantee.
- * Future enhancement: proxy relationships having expiration
+ * Voting page submits chits for signing with the username not of the logged-in voter, but
+ * with the proxy grantee.
+ * Ballots are stored in local storage for each person for whom you're voting, under the respective username.
+ * TODO: we get into situations confusing for the users if someone gets or fires a proxy holder while a Question is open for polling.
+ * Probably we should have blinded chits saved in the database. Report, when you fetch the votable
+ * Questions, what blinded chits have been signed. Then the client can report "this question may have
+ * already been voted on, either by a proxy holder or by you in another browser."
+ * Future enhancement: proxy relationships having expiration date?
  */
 @Entity
 public class Voter {
@@ -85,7 +95,7 @@ public class Voter {
     private String resetPasswordSalt;
     private String resetPasswordHash;
     private String resetConfirmationCode;
-/* Not yet implemnting proxies
+
     @ManyToOne
     @JoinColumn(name = "fk_proxy")
     private Voter proxyHolder;
@@ -93,7 +103,6 @@ public class Voter {
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_proxy")
     public List<Voter> proxyGrantees;
-*/
 
     protected Voter() {} // Hibernate needs this
 
@@ -122,10 +131,27 @@ public class Voter {
     public void setAdmin(boolean flag) { this.admin = flag; }
     private String getConfirmationCode() { return this.confirmationCode; }
     public boolean isEmailConfirmed() { return emailConfirmed; }
-/* Not yet implementing granting proxies
+
     public Voter getProxyHolder() { return proxyHolder; }
+    protected void setProxyHolder(Voter proxyHolder) {
+        Voter prevProxyHolder = this.getProxyHolder();
+        if ((proxyHolder == null && prevProxyHolder == null) ||
+                (proxyHolder != null && proxyHolder.equals(prevProxyHolder))) {
+            return;
+        }
+        this.proxyHolder = proxyHolder;
+        this.proxyAccepted = false;
+        if (prevProxyHolder != null) {
+            prevProxyHolder.proxyGrantees.remove(this);
+        }
+        if (proxyHolder != null) {
+            proxyHolder.proxyGrantees.add(this);
+        }
+    }
     public boolean isProxyAccepted() { return proxyAccepted; }
-    public List<Voter> getProxyGrantees() { return proxyGrantees; }  */
+    public void setProxyAccepted(boolean flag) { proxyAccepted = flag; }
+    @JsonIgnore
+    public List<Voter> getProxyGrantees() { return proxyGrantees; }
 
     /**
      * Come up with a new ugly random password that a user can use if they can't remember their password.
@@ -141,6 +167,7 @@ public class Voter {
      * @throws NoSuchAlgorithmException
      */
     public void prepareForReset() throws UnsupportedEncodingException, NoSuchAlgorithmException {
+        /* TODO: for convenience in testing, if the profile is dev, set password to something dumb */
         newRandomPassword = (new BigInteger(48, ThreadLocalRandom.current())).toString(36);
         resetPasswordSalt = (new BigInteger(48, ThreadLocalRandom.current())).toString(36);
         resetPasswordHash = hashWithSalt(newRandomPassword, resetPasswordSalt);
@@ -244,4 +271,55 @@ public class Voter {
     public void invalidateConfirmationCode() {
         confirmationCode = null;
     }
+
+    @JsonGetter("acceptedProxyGrantees")
+    public List<Map> getAcceptedProxyGranteeInfo() {
+        List<Map> results = new ArrayList<Map>();
+        for (Voter other : getAcceptedProxyGrantees()) {
+            Map<String, String> info = new HashMap<String, String>();
+            info.put("name", other.getName());
+            info.put("username", other.getUsername());
+            results.add(info);
+        }
+        return results;
+    }
+
+    public List<Voter> getAcceptedProxyGrantees() {
+        List<Voter> results = new ArrayList<Voter>();
+        for (Voter other : getProxyGrantees()) {
+            if (other.isProxyAccepted()) {
+                results.add(other);
+            }
+        }
+        return results;
+    }
+
+    public boolean canAcceptProxy() {
+        return (getAcceptedProxyGrantees().size() < 2);
+    }
+
+    public boolean requestProxyHolding(Voter grantor) {
+        grantor.setProxyHolder(this);
+        return true;
+    }
+
+    public boolean acceptProxyHolding(Voter grantor) {
+        grantor.proxyAccepted = true;
+        return true;
+    }
+
+    public boolean declineProxyHolding(Voter grantor) {
+        grantor.proxyAccepted = false;
+        grantor.proxyHolder = null;
+        this.proxyGrantees.remove(grantor);
+        return true;
+    }
+
+    public boolean equals(Object obj) {
+        if (obj == null) return false;
+        if (!obj.getClass().equals(this.getClass())) return false;
+        if (!((Voter)obj).getUsername().equals(this.getUsername())) return false;
+        return true;
+    }
+
 }

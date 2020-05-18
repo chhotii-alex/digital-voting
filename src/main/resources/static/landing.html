@@ -37,7 +37,7 @@ function checkNewPasswords(e) {
 </h1>
 <div id="landingapp">
     <form action="logout">
-        Welcome, {{ username }}
+        Welcome, {{ name }}
         <input type="submit" value="Log Out" class="loginbutton" >
     </form>
     <p/>
@@ -47,10 +47,36 @@ function checkNewPasswords(e) {
     </div>
     <div v-show="allowedToVote" >
         <b><i>
-            <a href="voting" class="roomy">VOTE here</a>
+            <span v-if="!hasActiveProxyHolder" >
+                <a href="voting" class="roomy">VOTE here</a>
+                <div v-for="other in acceptedProxyGrantees" >
+                    <a :href="other.url" class="roomy">VOTE here on {{ other.name }}'s behalf</a>
+                </div>
+            </span>
         </i></b>
         <p/>
-
+        <div v-if="canGrantProxy" >
+            <div v-if="proxyHolder" >
+                {{ proxyHolder.name }}
+                <span v-if="proxyAccepted" >
+                    is holding your proxy.
+                </span>
+                <span v-if="!proxyAccepted" >
+                    has not yet accepted your request to hold your proxy.
+                </span>
+                <button v-on:click="revokeProxy" class="bigbutton">Revoke Proxy</button>
+            </div>
+            <div v-if="!proxyHolder" >
+                Potential proxy holders:
+                <select v-model="selectedPotentialProxy">
+                    <option disabled value="">Please select one</option>
+                    <option v-for="pp in potentialProxies" :value="pp"> {{ pp.name }} </option>
+                </select>
+                <span v-show="selectedPotentialProxy" >
+                    <button v-on:click="requestProxyHolder" class="bigbutton"> Request Proxy Holding</button>
+                </span>
+            </div>
+        </div>
     </div>
     <fieldset class="roomy">
         <legend>My Account</legend>

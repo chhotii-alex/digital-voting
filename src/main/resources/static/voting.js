@@ -13,11 +13,11 @@ function isTrouble() {
 function setStorageString(key, cvalue) {
     window.localStorage.setItem(key, encodeURIComponent(cvalue));
 }
-function setStorageData(key, data) {
-    if (!getUser()) {
-        throw "Valid user not known or not logged in.";
+function setStorageData(user, key, data) {
+    if (!user) {
+        throw "Error setting storage data: Valid user not known or not logged in.";
     }
-    var existingData = getStorageString(getUser());
+    var existingData = getStorageString(user);
     if (existingData) {
         existingData = JSON.parse(existingData);
     }
@@ -25,18 +25,18 @@ function setStorageData(key, data) {
         existingData = {};
     }
     existingData[key] = data;
-    setStorageString(getUser(), JSON.stringify(existingData));
+    setStorageString(user, JSON.stringify(existingData));
 }
 function getStorageString(key) {
       var value = window.localStorage.getItem(key);
       value = decodeURIComponent(value);
       return value;
 }
-function getStorageData(key) {
-    if (!getUser()) {
-        throw "Valid user not known or not logged in.";
+function getStorageData(user, key) {
+    if (!user) {
+        throw "Error gettting storage data: Valid user not known or not logged in.";
     }
-    let str = getStorageString(getUser());
+    let str = getStorageString(user);
       if (str) {
         try {
             let obj = JSON.parse(str);
@@ -51,12 +51,15 @@ function getStorageData(key) {
     return null;
 }
 
-function getArchivedBallotIdentifiers() {
-    if (!getUser()) {
-        throw "Valid user not known or not logged in.";
+/*
+    param: voter: username of voter whose votes we want to view
+*/
+function getArchivedBallotIdentifiers(voter) {
+    if (!voter) {
+        throw "Error getting archived ballots: Valid user not known or not logged in.";
     }
     var results = [];
-    let str = getStorageString(getUser());
+    let str = getStorageString(voter);
     if (str) {
         try {
             let obj = JSON.parse(str);
@@ -101,7 +104,7 @@ Random = {
     },
 };
 class VotableQuestion extends Question {
-    constructor(obj) {
+    constructor(voter, obj) {
         super();
         this.id = obj.id;
         this.addResponseOptionsFrom(obj);
@@ -111,12 +114,12 @@ class VotableQuestion extends Question {
         this.e = bigInt(obj.exponentStr);
         this.n = bigInt(obj.modulusStr);
         let ballotKey = "ballot." + this.id;
-        let savedBallotInfo = getStorageData(ballotKey);
+        let savedBallotInfo = getStorageData(voter, ballotKey);
         if (this.type == Question.CountingTypeSingle) {
-            this.ballot = new SingleChoiceBallot(this, ballotKey, savedBallotInfo);
+            this.ballot = new SingleChoiceBallot(voter, this, ballotKey, savedBallotInfo);
         }
         else if (this.type == Question.CountingTypeRanked) {
-            this.ballot = new RankedChoiceBallot(this, ballotKey, savedBallotInfo);
+            this.ballot = new RankedChoiceBallot(voter, this, ballotKey, savedBallotInfo);
         }
     }
     canVote() {
@@ -211,7 +214,8 @@ class ResponseChit extends Chit {
     }
 };
 class Ballot {
-    constructor(question, ballotKey, savedBallotInfo) {
+    constructor(voter, question, ballotKey, savedBallotInfo) {
+        this.voter = voter;
         this.theQuestion = question;
         this.voteSubmissionURL = '';
         this.ballotKey = ballotKey;
@@ -264,7 +268,7 @@ class Ballot {
         this.saveToLocalStorage();
     };
     saveToLocalStorage() {
-        setStorageData(this.ballotKey, this.makeSavedBallotObj());
+        setStorageData(this.voter, this.ballotKey, this.makeSavedBallotObj());
     };
     static randomKforModulus(n) {
         var k;
@@ -298,7 +302,10 @@ class Ballot {
 	    this.saveToLocalStorage();
     };
     signOneChit(chit, blindedChitText, quid) {
-        let url = "ballot/" + quid + chit.getSignatureEndpoint();
+        var url = "ballot/" + quid + chit.getSignatureEndpoint();
+        if (this.voter) {
+            url = url + "?behalf=" + encodeURIComponent(this.voter);
+        }
         let promise = axios.post(url, { b: blindedChitText });
         promise.then( response => {
             chit.acceptSignedBlindedText(response);
@@ -393,8 +400,8 @@ Ballot.ACKNOWLEDGED_STATE = 3;
 Ballot.USER_SUBMITTED_STATE = 4;
 Ballot.VERIFIED_STATE = 5;
 class SingleChoiceBallot extends Ballot {
-    constructor(question, ballotKey, savedBallotInfo) {
-        super(question, ballotKey, savedBallotInfo);
+    constructor(voter, question, ballotKey, savedBallotInfo) {
+        super(voter, question, ballotKey, savedBallotInfo);
         this.endpoint = "vote_get";
     };
     initFromSavedBallot(savedBallotInfo) {
@@ -526,8 +533,8 @@ class SingleChoiceBallot extends Ballot {
 	};
 }
 class RankedChoiceBallot extends Ballot {
-    constructor(question, ballotKey, savedBallotInfo) {
-        super(question, ballotKey, savedBallotInfo);
+    constructor(voter, question, ballotKey, savedBallotInfo) {
+        super(voter, question, ballotKey, savedBallotInfo);
         this.endpoint = "vote_get_rank";
     };
     initFromSavedBallot(savedBallotInfo) {
@@ -789,9 +796,9 @@ var voterApp = new Vue({
     el: '#voterapp',
     data: {
         visible: true,
-        username: null,
-        name: null,
-        email: null,
+        username: null,   // username of account we're logged in as
+        name: null,   // name of person holding account we're logged in as
+        effectiveVoter: null, // can be different from logged-in voter if we're holding a proxy
         allowedToVote: false,
         errorText: '',
         votableQuestions: [],
@@ -800,9 +807,21 @@ var voterApp = new Vue({
     mounted() {
         userActive();
         this.$data.username = getUser();
-        let url = "voters/" + this.$data.username;
-        let aPromise = axios.get(url);
+        if (gVoter == null) {
+            this.$data.effectiveVoter = getUser();
+        }
+        else {
+            this.$data.effectiveVoter = gVoter;
+        }
+        var url = "voters/" + this.$data.username;
+        var aPromise = axios.get(url);
         aPromise.then(response => this.processUserInfo(response), error => this.dealWithError(error));
+        if (this.$data.effectiveVoter != this.$data.username) {
+            url = "voters/" + this.$data.effectiveVoter;
+            var aPromise = axios.get(url);
+            // TODO: handle 404 correctly
+            aPromise.then(response => this.processEffectiveVoterInfo(response), error => this.dealWithError(error));
+        }
     },
     computed: {
         anyQuestionsVoted: function() {
@@ -815,7 +834,8 @@ var voterApp = new Vue({
             return anyVoted;
         },
         hasUnshownOldQuestions: function() {
-            let ids = getArchivedBallotIdentifiers();
+            if (!this.$data.effectiveVoter) { return false; }
+            let ids = getArchivedBallotIdentifiers(this.$data.effectiveVoter);
             var i;
             for (i = 0; i < ids.length; ++i) {
                 let id = ids[i];
@@ -834,12 +854,14 @@ var voterApp = new Vue({
     methods: {
         processUserInfo: function(response) {
             this.$data.name= response.data.name;
-            this.$data.email = response.data.email;
             this.$data.allowedToVote = response.data.allowedToVote;
-            this.$data.admin = response.data.admin;
             if (this.$data.allowedToVote) {
                 this.fetchCTFKeys();
             }
+        },
+        processEffectiveVoterInfo: function(response) {
+            // TODO: check that effective voter is still allowed to vote
+            // TODO: check that logged-in voter is in fact effective voter's proxy holder
         },
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;
@@ -880,7 +902,7 @@ var voterApp = new Vue({
         },
         startShowingOldQuestions: function() {
             userActive();
-            let ids = getArchivedBallotIdentifiers();
+            let ids = getArchivedBallotIdentifiers(this.$data.effectiveVoter);
             var i;
             for (i = 0; i < ids.length; ++i) {
                 let id = ids[i];
@@ -909,7 +931,7 @@ var voterApp = new Vue({
         },
         processOldQuestion: function(response) {
             let obj = response.data;
-            var q = new VotableQuestion(obj);
+            var q = new VotableQuestion(this.$data.effectiveVoter, obj);
             this.$data.votableQuestions.push(q);
         },
         processOpenQuestions: function(questions) {
@@ -940,7 +962,7 @@ var voterApp = new Vue({
                         Chits can only choose its random numbers, and get signed, after we have those numbers.
                     */
                     if (this.isKeyInfoKnown) {
-                        var q = new VotableQuestion(obj);
+                        var q = new VotableQuestion(this.$data.effectiveVoter, obj);
                         this.$data.votableQuestions.push(q);
                     }
                 }

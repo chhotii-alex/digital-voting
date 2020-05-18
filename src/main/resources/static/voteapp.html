@@ -17,15 +17,17 @@
 gPublicKey = new bigInt("##EXPONENT##");
 gModulus = new bigInt("##MODULUS##");
 gPageLoadQuestions = ##QUESTIONS##;
+gVoter = "##VOTER##";
 </script>
 <h1>
     The On-line Digital Voting Page
 </h1>
 <div id="voterapp">
     <form action="logout">
-        Welcome, {{ username }}
+        Welcome, {{ name }}
         <input type="submit" value="Log Out" class="loginbutton" >
     </form>
+    Voting on behalf of <b> ##VOTERNAME## </b>
     <p/>
     <a href="/landing">Return to Main Page</a>
     <div v-show="allowedToVote" >

@@ -27,7 +27,7 @@ public class UserAdminController extends APIController {
 
     @GetMapping("/voters/{username}")
     public Voter getInfoOnVoter(@RequestHeader HttpHeaders headers, @PathVariable String username) {
-        loginManager.validateCanAdministerUser(headers, username);
+        loginManager.validatePrivilegedUser(headers);
         Voter v = voterListManager.getForUsername(username);
         if (v == null) {
             throw new ItemNotFoundException();

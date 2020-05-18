@@ -3,10 +3,8 @@ package com.jagbag.dvoting;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.security.NoSuchAlgorithmException;
@@ -41,6 +39,7 @@ class VotingAPIControllerTest {
     @Test
     void fillInVotingInfo() {
         String templateText = "##EXPONENT##~##MODULUS##~##QUESTIONS##";
+        Voter v = new Voter("Someone", "someone", "nobody@nowhere.com");
         String questionText = "Is this a simple question?";
         Question q = new Question(questionText);
         q.addResponseOption(new ResponseOption("yes"));
@@ -54,7 +53,7 @@ class VotingAPIControllerTest {
         }
         String finalText = null;
         try {
-            finalText = votingAPIController.fillInVotingInfo(templateText);
+            finalText = votingAPIController.fillInVotingInfo(templateText, v);
         }
         catch (JsonProcessingException e) {
             e.printStackTrace();

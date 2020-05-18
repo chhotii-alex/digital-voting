@@ -29,14 +29,18 @@ import java.util.Map;
 public class VotingAPIController extends APIController {
     @Autowired private CentralTabulatingFacility ctf;
     @Autowired private LoginController loginController;
+    @Autowired private VoterListManager voterListManager;
 
     /** File containing the voting page */
     @Value("classpath:static/voteapp.html")
     protected Resource votingPageTemplate;
 
     @GetMapping("/voting")
-    public ResponseEntity getVotingPage(@RequestHeader HttpHeaders headers) throws Exception {
+    public ResponseEntity getVotingPage(@RequestHeader HttpHeaders headers,
+                                        @RequestParam(required = false) String behalf) throws Exception {
         Voter v = null;
+        Voter proxyGrantee = null;
+        Voter effectiveVoter = null;
         try {
             v = loginManager.validateBasicUser(headers);
         }
@@ -46,14 +50,30 @@ public class VotingAPIController extends APIController {
         if (!v.isAllowedToVote()) {
             return loginController.getLanding(headers);
         }
+        effectiveVoter = v;
+        if (behalf != null) {
+            proxyGrantee = voterListManager.getForUsername(behalf);
+            if (proxyGrantee == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (!v.equals(proxyGrantee.getProxyHolder())) {   // if you're not their proxy holder...
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            if (!proxyGrantee.isProxyAccepted()) {   // if you haven't accepted their proxy officially...
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            effectiveVoter = proxyGrantee;
+        }
         String pageText = textFromResource(votingPageTemplate);
-        pageText = fillInVotingInfo(pageText);
+        pageText = fillInVotingInfo(pageText, effectiveVoter);
         return ResponseEntity.ok().body(pageText);
     }
 
-    public String fillInVotingInfo(String pageText) throws JsonProcessingException {
+    protected String fillInVotingInfo(String pageText, Voter effectiveVoter) throws JsonProcessingException {
         pageText = pageText.replaceAll("##EXPONENT##", ctf.getPublicExponent().toString(10));
         pageText = pageText.replaceAll("##MODULUS##", ctf.getModulus().toString(10));
+        pageText = pageText.replaceAll("##VOTER##", effectiveVoter.getUsername());
+        pageText = pageText.replaceAll("##VOTERNAME##", effectiveVoter.getName());
 
         String questionString = new ObjectMapper().writeValueAsString(ctf.votableQuestionList());
         pageText = pageText.replaceAll("##QUESTIONS##", questionString);
@@ -79,10 +99,46 @@ public class VotingAPIController extends APIController {
         return ResponseEntity.ok(list);
     }
 
+    /**
+     * Find and validate the Voter for whom this voting action is being done.
+     * Normally, you would think, this would be the logged-in user. However, if the "behalf"
+     * query parameter is supplied, the logged-in user is asking on behalf of one whose proxy
+     * they hold. Validate that the user who (supposedly) has granted the proxy is, in fact,
+     * a user with voting privileges; has granted their proxy to the logged-in user; and that
+     * the proxy has been accepted.
+     * @param headers tell us who is logged in
+     * @param behalf may be null; if not, should be a valid username; either the logged-in user or
+     *               one who has granted their proxy to the logged-in user
+     * @return Voter object representing the person on whose behalf we will vote
+     */
+    protected Voter getEffectiveVoter(@RequestHeader HttpHeaders headers, String behalf) {
+        Voter v = loginManager.validateVotingUser(headers);
+        if (behalf != null) {
+            Voter effectiveVoter = voterListManager.getForUsername(behalf);
+            if (effectiveVoter == null) {
+                throw new ItemNotFoundException();
+            }
+            if (!effectiveVoter.isAllowedToVote()) {
+                throw new ForbiddenException();
+            }
+            if (!effectiveVoter.equals(v)) {
+                if (!v.equals(effectiveVoter.getProxyHolder())) {
+                    throw new ForbiddenException();
+                }
+                if (!effectiveVoter.isProxyAccepted()) {
+                    throw new ForbiddenException();
+                }
+                v = effectiveVoter;
+            }
+        }
+        return v;
+    }
+
     @PostMapping(value="ballot/{quid}/sign")
     public ResponseEntity getChitSigned(@RequestHeader HttpHeaders headers,
-                                        @PathVariable long quid, @RequestBody PostPayload chit) {
-        Voter v = loginManager.validateVotingUser(headers);
+                                        @PathVariable long quid, @RequestParam(required = false) String behalf,
+                                        @RequestBody PostPayload chit) {
+        Voter v = getEffectiveVoter(headers, behalf);
         String result = ctf.signResponseChit(chit.getB(), v, quid);
         if (result == null) {
             throw new ForbiddenException();
@@ -92,8 +148,9 @@ public class VotingAPIController extends APIController {
 
     @PostMapping(value="ballot/{quid}/signme")
     public ResponseEntity getMeChitSigned(@RequestHeader HttpHeaders headers,
-                                        @PathVariable long quid, @RequestBody PostPayload chit) {
-        Voter v = loginManager.validateVotingUser(headers);
+                                        @PathVariable long quid, @RequestParam(required = false) String behalf,
+                                          @RequestBody PostPayload chit) {
+        Voter v = getEffectiveVoter(headers, behalf);
         String result = ctf.signMeChit(chit.getB(), v, quid);
         if (result == null) {
             throw new ForbiddenException();

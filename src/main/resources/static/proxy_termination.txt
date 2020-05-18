@@ -1,0 +1,7 @@
+Dear ##PROXYNAME##,
+
+This is to inform you that your are no longer holding the proxy for ##NAME## in upcoming on-line voting.
+You will not be able to vote on their behalf. No action on your part is required.
+
+Thank you,
+The Digital Voting Platform

@@ -135,9 +135,10 @@ public class LoginController extends APIController {
     @GetMapping("/reset")
     public ResponseEntity receiveResetRequest(@RequestParam String user, @RequestParam String code) throws Exception {
         Voter v = voterListManager.getForUsername(user);
-        if (v != null) {
-            voterListManager.resetPassword(v, code);
+        if (v == null) {
+            return ResponseEntity.notFound().build();
         }
+        voterListManager.resetPassword(v, code);
         return getLoginPage();
     }
 
@@ -218,6 +219,7 @@ public class LoginController extends APIController {
             // this would be wtf
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to change password");
         }
+        /* TODO: Is user logged out now? Why??? Should they be? */
         return redirectToPage("/success.html");
     }
 

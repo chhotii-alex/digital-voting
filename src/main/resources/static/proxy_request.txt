@@ -1,0 +1,14 @@
+Dear ##PROXYNAME##,
+
+##NAME## has asked that you hold their proxy in upcoming elections on the Digital Voting Platform.
+
+To accept this person's proxy, click here:
+
+<a href="##ACCEPT_URL##">##ACCEPT_URL##</a>
+
+To refuse this person's proxy, click here:
+
+<a href="##REFUSE_URL##">##REFUSE_URL##</a>
+
+Thank you,
+The Digital On-line Voting Platform
