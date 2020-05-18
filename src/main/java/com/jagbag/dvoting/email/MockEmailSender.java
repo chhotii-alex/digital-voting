@@ -1,4 +1,4 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.email;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;

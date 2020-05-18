@@ -1,5 +1,8 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.controllers;
 
+import com.jagbag.dvoting.*;
+import com.jagbag.dvoting.entities.*;
+import com.jagbag.dvoting.exceptions.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,7 +72,7 @@ public class VotingAPIController extends APIController {
         return ResponseEntity.ok().body(pageText);
     }
 
-    protected String fillInVotingInfo(String pageText, Voter effectiveVoter) throws JsonProcessingException {
+    public String fillInVotingInfo(String pageText, Voter effectiveVoter) throws JsonProcessingException {
         pageText = pageText.replaceAll("##EXPONENT##", ctf.getPublicExponent().toString(10));
         pageText = pageText.replaceAll("##MODULUS##", ctf.getModulus().toString(10));
         pageText = pageText.replaceAll("##VOTER##", effectiveVoter.getUsername());

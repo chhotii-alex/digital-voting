@@ -1,5 +1,6 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.entities;
 
+import com.jagbag.dvoting.*;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -53,7 +54,7 @@ import java.time.*;
  */
 @Entity
 public class Question extends SigningEntity {
-    enum CountingType {
+    public enum CountingType {
         SINGLE,
         MULTIPLE,
         RANKED_CHOICE
@@ -112,7 +113,7 @@ public class Question extends SigningEntity {
         return (ranking < max);
     }
 
-    protected void setCreateDateTime() {
+    public void setCreateDateTime() {
         if (type == null) {
             type = CountingType.SINGLE;
         }

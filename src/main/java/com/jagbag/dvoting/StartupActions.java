@@ -1,5 +1,6 @@
 package com.jagbag.dvoting;
 
+import com.jagbag.dvoting.entities.Question;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;

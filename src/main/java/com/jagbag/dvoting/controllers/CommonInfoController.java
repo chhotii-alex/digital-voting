@@ -1,5 +1,8 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.controllers;
 
+import com.jagbag.dvoting.*;
+import com.jagbag.dvoting.entities.*;
+import com.jagbag.dvoting.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -153,10 +156,10 @@ public class CommonInfoController extends APIController {
             return HttpStatus.GONE;
         }
         if (proxyVoter.requestProxyHolding(grantor)) {
-            String acceptURL = String.format("%s/voters/proxyaccept?proxy=%s&grantor=%s", hostBaseURL,
+            String acceptURL = String.format("%s/voters/proxyaccept?proxy=%s&grantor=%s", getHostBaseURL(),
                     URLEncoder.encode(proxyVoter.getUsername(), StandardCharsets.UTF_8.toString()),
                     URLEncoder.encode(grantor.getUsername(), StandardCharsets.UTF_8.toString()));
-            String refuseURL = String.format("%s/voters/proxyrefuse?proxy=%s&grantor=%s", hostBaseURL,
+            String refuseURL = String.format("%s/voters/proxyrefuse?proxy=%s&grantor=%s", getHostBaseURL(),
                     URLEncoder.encode(proxyVoter.getUsername(), StandardCharsets.UTF_8.toString()),
                     URLEncoder.encode(grantor.getUsername(), StandardCharsets.UTF_8.toString()));
 

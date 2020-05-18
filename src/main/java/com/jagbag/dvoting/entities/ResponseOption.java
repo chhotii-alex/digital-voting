@@ -1,4 +1,4 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

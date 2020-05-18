@@ -1,5 +1,7 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.controllers;
 
+import com.jagbag.dvoting.*;
+import com.jagbag.dvoting.email.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -31,7 +33,7 @@ import java.util.Map;
  */
 public class APIController {
     @Value( "${base-url}" )
-    public String hostBaseURL;
+    private String hostBaseURL;
 
     /** See {@link LoginManager} */
     @Autowired
@@ -41,6 +43,10 @@ public class APIController {
     protected EntityManagerFactory emf;
     /** Connection to the email sending system */
     @Autowired protected EmailSender emailSender;
+
+    public String getHostBaseURL() {
+        return hostBaseURL;
+    }
 
     /**
      * Find a file in the classpath and return its text contents.
@@ -56,7 +62,7 @@ public class APIController {
      * Parse a query string, or the data sent by submitting an HTML form, into a Map.
      * Removes URL encoding from the values.
      */
-    protected Map<String, String> parseForm(String formData) throws UnsupportedEncodingException {
+    public Map<String, String> parseForm(String formData) throws UnsupportedEncodingException {
         Map<String, String> formValue = new HashMap<String, String>();
         String[] params = formData.split("&");
         for (String param : params) {

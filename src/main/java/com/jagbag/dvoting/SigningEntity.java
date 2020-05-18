@@ -35,7 +35,7 @@ upon starting.
         return pair;
     }
 
-    void initializeKeys() throws NoSuchAlgorithmException {
+    public void initializeKeys() throws NoSuchAlgorithmException {
         rsaKeys = generateKeyPair();
     }
     protected RSAPublicKey getPublicKey() {

@@ -1,6 +1,10 @@
 package com.jagbag.dvoting;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.jagbag.dvoting.controllers.VotingAPIController;
+import com.jagbag.dvoting.entities.Question;
+import com.jagbag.dvoting.entities.ResponseOption;
+import com.jagbag.dvoting.entities.Voter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

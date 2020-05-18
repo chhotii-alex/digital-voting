@@ -1,5 +1,10 @@
 package com.jagbag.dvoting;
 
+import com.jagbag.dvoting.controllers.APIController;
+import com.jagbag.dvoting.controllers.LoginController;
+import com.jagbag.dvoting.entities.*;
+import com.jagbag.dvoting.email.*;
+import com.jagbag.dvoting.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -32,6 +37,7 @@ public class LoginManager {
 
     /** See {@link VoterListManager } */
     @Autowired protected VoterListManager voterListManager;
+    @Autowired protected LoginController loginController;
     private Map<String, String> tokens = new HashMap<String, String>();
     private Map<String, Long> backoffPerLogin = new HashMap<String, Long>();
 
@@ -79,7 +85,7 @@ public class LoginManager {
         return (token.equals(tokenForUser(username)));
     }
 
-    protected synchronized String tokenForUser(String username) {
+    public synchronized String tokenForUser(String username) {
         return tokens.get(username);
     }
 
@@ -252,10 +258,10 @@ public class LoginManager {
      * @param v - person whose password is being reset
      * @return
      */
-    protected boolean sendResetEmail(Voter v) {
+    public boolean sendResetEmail(Voter v) {
         try {
             String text = v.processEmailText(APIController.textFromResource(resetEmailTemplate));
-            text = text.replaceAll("##BASEURL##", hostBaseURL);
+            text = text.replaceAll("##BASEURL##", loginController.getHostBaseURL());
             emailSender.sendEmail(v.getEmail(), "your password reset", text);
             return true;
         }
@@ -274,7 +280,7 @@ public class LoginManager {
         try {
             String text = v.processEmailText(APIController.textFromResource(confirmEmailTemplate));
             // TODO: how do we get the actual URL we're running at?
-            text = text.replaceAll("##BASEURL##", hostBaseURL);
+            text = text.replaceAll("##BASEURL##", loginController.getHostBaseURL());
             emailSender.sendEmail(v.getEmail(), "please confirm your email", text);
             return true;
         }
@@ -285,10 +291,6 @@ public class LoginManager {
         }
     }
 
-
-    @Value( "${base-url}" )
-    public String hostBaseURL;
-
     /**
      * Send the email to a user whose account was created due to a bulk upload by admin
      * @param v - person with new account
@@ -297,7 +299,7 @@ public class LoginManager {
     public boolean sendAutomaticallyAddedAccountEmail(Voter v) {
         try {
             String text = v.processEmailText(APIController.textFromResource(announceEmailTemplate));
-            text = text.replaceAll("##BASEURL##", hostBaseURL);
+            text = text.replaceAll("##BASEURL##", loginController.getHostBaseURL());
             emailSender.sendEmail(v.getEmail(), "Digital Voting account", text);
             return true;
         }

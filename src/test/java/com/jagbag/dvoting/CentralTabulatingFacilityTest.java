@@ -1,6 +1,8 @@
 package com.jagbag.dvoting;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.jagbag.dvoting.entities.Question;
+import com.jagbag.dvoting.entities.ResponseOption;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;

@@ -1,4 +1,4 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.email;
 
 /**
  * Interface to the email system, for sending out emails to users.

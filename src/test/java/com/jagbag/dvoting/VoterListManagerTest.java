@@ -1,5 +1,6 @@
 package com.jagbag.dvoting;
 
+import com.jagbag.dvoting.entities.Voter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

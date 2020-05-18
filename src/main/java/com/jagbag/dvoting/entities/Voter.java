@@ -1,4 +1,4 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.entities;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -133,7 +133,7 @@ public class Voter {
     public boolean isEmailConfirmed() { return emailConfirmed; }
 
     public Voter getProxyHolder() { return proxyHolder; }
-    protected void setProxyHolder(Voter proxyHolder) {
+    public void setProxyHolder(Voter proxyHolder) {
         Voter prevProxyHolder = this.getProxyHolder();
         if ((proxyHolder == null && prevProxyHolder == null) ||
                 (proxyHolder != null && proxyHolder.equals(prevProxyHolder))) {

@@ -1,5 +1,7 @@
 package com.jagbag.dvoting;
 
+import com.jagbag.dvoting.entities.Question;
+import com.jagbag.dvoting.entities.ResponseOption;
 import org.junit.jupiter.api.Test;
 
 import java.security.NoSuchAlgorithmException;

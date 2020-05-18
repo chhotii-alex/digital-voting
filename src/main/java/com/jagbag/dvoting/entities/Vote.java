@@ -1,4 +1,4 @@
-package com.jagbag.dvoting;
+package com.jagbag.dvoting.entities;
 
 import org.hibernate.annotations.Immutable;
 import javax.persistence.*;
