@@ -871,8 +871,34 @@ var voterApp = new Vue({
             }
         },
         processEffectiveVoterInfo: function(response) {
-            // TODO: check that effective voter is still allowed to vote
-            // TODO: check that logged-in voter is in fact effective voter's proxy holder
+            // check that effective voter is still allowed to vote
+            // check that logged-in voter is in fact effective voter's proxy holder
+            // Of course, the server will reject chit-signing if these conditions do not prevail.
+            // But try to avoid that going to the server-- it will be confusing for user.
+            var allOK = true;
+            if (!response.data.allowedToVote) {
+                allOK = false;
+            }
+            if (response.data.username != this.$data.username) {
+                // this is someone whose proxy we should be holding
+                if (response.data.proxyAccepted) {
+                    if (response.data.proxyHolder.username != this.$data.username) {
+                        allOK = false;
+                    }
+                }
+                else {
+                    allOK = false;
+                }
+            }
+            if (!allOK) {
+                console.log("rejecting page");
+                // bail out of this page
+                Vue.nextTick(function() {
+                    console.log("next tick");
+                    alert("Not a current valid proxy relationship");
+                    window.location.href = "/";
+                });
+            }
         },
         dealWithError: function(error) {
             this.$data.errorText = "Error: " + error;

@@ -81,4 +81,11 @@ public class APIController {
         return ResponseEntity.status(HttpStatus.SEE_OTHER).headers(responseHeaders).build();
     }
 
+
+    protected ResponseEntity showResponse(String s) {
+        s = s + "<a href=\"/\"> Return to main page.</a>";
+        return ResponseEntity.ok(s);
+    }
+
+
 }

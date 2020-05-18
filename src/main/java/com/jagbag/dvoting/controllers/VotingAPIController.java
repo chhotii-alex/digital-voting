@@ -55,15 +55,21 @@ public class VotingAPIController extends APIController {
         }
         effectiveVoter = v;
         if (behalf != null) {
+            boolean proxyOK = true;
             proxyGrantee = voterListManager.getForUsername(behalf);
             if (proxyGrantee == null) {
-                return ResponseEntity.notFound().build();
+                proxyOK = false;
             }
-            if (!v.equals(proxyGrantee.getProxyHolder())) {   // if you're not their proxy holder...
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            else {
+                if (!v.equals(proxyGrantee.getProxyHolder())) {   // if you're not their proxy holder...
+                    proxyOK = false;
+                }
+                if (!proxyGrantee.isProxyAccepted()) {   // if you haven't accepted their proxy officially...
+                    proxyOK = false;
+                }
             }
-            if (!proxyGrantee.isProxyAccepted()) {   // if you haven't accepted their proxy officially...
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            if (!proxyOK) {
+                return showResponse("You are no longer currently the proxy holder.");
             }
             effectiveVoter = proxyGrantee;
         }
