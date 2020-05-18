@@ -139,7 +139,11 @@ public class VotingAPIController extends APIController {
                                         @PathVariable long quid, @RequestParam(required = false) String behalf,
                                         @RequestBody PostPayload chit) {
         Voter v = getEffectiveVoter(headers, behalf);
-        String result = ctf.signResponseChit(chit.getB(), v, quid);
+        Question q = ctf.lookupPostedQuestion(quid);
+        if (q == null) {
+            throw new ItemNotFoundException();
+        }
+        String result = ctf.signResponseChit(chit.getB(), v, q);
         if (result == null) {
             throw new ForbiddenException();
         }
@@ -151,7 +155,11 @@ public class VotingAPIController extends APIController {
                                         @PathVariable long quid, @RequestParam(required = false) String behalf,
                                           @RequestBody PostPayload chit) {
         Voter v = getEffectiveVoter(headers, behalf);
-        String result = ctf.signMeChit(chit.getB(), v, quid);
+        Question q = ctf.lookupPostedQuestion(quid);
+        if (q == null) {
+            throw new ItemNotFoundException();
+        }
+        String result = ctf.signMeChit(chit.getB(), v, q);
         if (result == null) {
             throw new ForbiddenException();
         }

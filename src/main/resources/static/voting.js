@@ -315,10 +315,17 @@ class Ballot {
             console.log(error.response);
             if (!this.errorCountPerSigning) {
                 if (error.response) {
-                    if  (error.response.status == 403) {   // Forbidden
-                        // Why would the CTF refuse to sign? The only likely possibility is that the question closed
+                    if (error.response.status == 404) { //Not Found
+                        // This is what is returned if the Question is not polling-- could happen if
+                        // it was closed
                         // just as we loaded. Re-fetch the question list so that we can detect that it closed (if so.)
                         voterApp.checkForNewQuestions();
+                    }
+                    else if  (error.response.status == 403) {   // Forbidden
+                        // The CTF will refuse to sign chits if this effective voter has already
+                        // had chits signed for this question. Could happen if this Question was
+                        // viewed by the Voter (or the Voter's proxy holder) in another browser.
+                        this.state = Ballot.UNAVAILABLE_STATE;
                     }
                     else if (error.response.status == 401) {  // Unauthorized
                         alert("Either you were logged out, or your permission to vote was revoked.");
@@ -382,6 +389,9 @@ class Ballot {
         return (this.state == Ballot.SUBMITTED_STATE || this.state == Ballot.USER_SUBMITTED_STATE
             || this.state == Ballot.ACKNOWLEDGED_STATE || this.state == Ballot.VERIFIED_STATE);
     };
+    isUnavailable() {
+        return (this.state == Ballot.UNAVAILABLE_STATE);
+    };
     verifyVote() {
         userActive();
         let url = "ballot/" + this.theQuestion.id + "/verify";
@@ -399,6 +409,7 @@ Ballot.SUBMITTED_STATE = 2;
 Ballot.ACKNOWLEDGED_STATE = 3;
 Ballot.USER_SUBMITTED_STATE = 4;
 Ballot.VERIFIED_STATE = 5;
+Ballot.UNAVAILABLE_STATE = 6;
 class SingleChoiceBallot extends Ballot {
     constructor(voter, question, ballotKey, savedBallotInfo) {
         super(voter, question, ballotKey, savedBallotInfo);

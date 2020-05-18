@@ -55,6 +55,7 @@ function flatten(a) {
 vote.
 */
 function allEquivalentOrderings(a) {
+    if (a.length < 1) { return a; }
     var j;
     /* Sort the list in ascending order (by votes property). Items with the same vote numbers will
         be arbitrarily ordered with respect to each other, though. */
@@ -168,8 +169,8 @@ function tabulateRankedChoiceResults(question, report) {
          var candidate = candidatesWithNonZeroVotes[j];
          eliminationPriorityQueue.push({name: candidate, votes: firstChoiceTotals[candidate]});
     }
-    universes = allEquivalentOrderings(eliminationPriorityQueue);
-    roundsByWinner = {};
+    var universes = allEquivalentOrderings(eliminationPriorityQueue);
+    var roundsByWinner = {};
     var u;
     for (u = 0; u < universes.length; ++u) {
         eliminationPriorityQueue = universes[u];

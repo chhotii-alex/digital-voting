@@ -140,6 +140,12 @@ gVoter = "##VOTER##";
                     <b>{{ opt }} :</b> <i> {{ count }} </i>
                 </div>
             </span>
+            <div v-if="question.ballot.isUnavailable()" >
+                <i> Voting unavailable on this question.
+                    Either you voted on this question in another browser, or your proxy-holder
+                    (if you had one) voted
+                on this question for you.</i>
+            </div>
         </div>
         <div v-if="!hasUnshownOldQuestions && !votableQuestions.length" >
             <i>No questions to vote on.</i>

@@ -133,7 +133,7 @@ public class CentralTabulatingFacility extends SigningEntity {
      */
     public Question lookUpQuestion(long quid) {
         Question theQuestion;
-        theQuestion = postedQuestions.get(quid);
+        theQuestion = lookupPostedQuestion(quid);
         if (theQuestion == null) {
             EntityManager em = emf.createEntityManager();
             // Look up the question in database
@@ -141,6 +141,16 @@ public class CentralTabulatingFacility extends SigningEntity {
             em.close();
         }
         return theQuestion;
+    }
+
+    /**
+     * Looks for and returns the Question with the given ID, ONLY if it's found the the in-memory
+     * collection of currently-polling Questions.
+     * @param quid ID of Question to look for
+     * @return a Question with the given ID; or null if there is no such Question or its status isn't polling
+     */
+    public Question lookupPostedQuestion(long quid) {
+        return postedQuestions.get(quid);
     }
 
     /**
@@ -158,16 +168,15 @@ public class CentralTabulatingFacility extends SigningEntity {
      * TODO: maybe? save for posterity a record of what Voters had ballots signed for each Question.
      * @param blindedMessageText a string representing a very big number, encoding the blinded chit
      * @param voter an object representing a person/account. Rejected if null, or not allowed to vote.
-     * @param quid the ID of the Question to which this response pertains
+     * @param theQuestion the Question to which this response pertains
      * @return signed, i.e. encrypted with CTF's private key, version of blinded chit
      */
-    public synchronized String signResponseChit(String blindedMessageText, Voter voter, long quid) {
+    public synchronized String signResponseChit(String blindedMessageText, Voter voter, Question theQuestion) {
         if (voter == null || !voter.isAllowedToVote()) {
             TroubleLogger.reportTrouble(String.format("Invalid voter trying to register ballot: %s", voter));
             return null;
         }
         String username = voter.getUsername();
-        Question theQuestion = lookUpQuestion(quid);
         if (theQuestion == null) { return null; }
         if (!theQuestion.getStatus().equals("polling")) {
             return null; // could happen if Q closed just as a client loads
@@ -175,7 +184,7 @@ public class CentralTabulatingFacility extends SigningEntity {
         // Check that a voter doesn't register more than one ballot per question.
         Map<Long, Set<String>> blindedChitsPerQuestion
                 = blindedChitsPerVoterPerQuestion.computeIfAbsent(username, (x) -> new HashMap<Long, Set<String>>());
-        Set<String> blindedChits = blindedChitsPerQuestion.computeIfAbsent(quid, (x) -> new HashSet<String>());
+        Set<String> blindedChits = blindedChitsPerQuestion.computeIfAbsent(theQuestion.getId(), (x) -> new HashSet<String>());
         if (blindedChits.contains(blindedMessageText)) {
             // Same blinded chit submitted again for signing. That's fine. Maybe it didn't get back to the client before.
             // Fall through to below conditional, re-calculate the signed chit and send (again).
@@ -197,17 +206,15 @@ public class CentralTabulatingFacility extends SigningEntity {
      * Voter per Question.
      * @param blindedMessageText a string representing a very big number, encoding the blinded chit
      * @param voter an object representing a person/account. Rejected if null, or not allowed to vote.
-     * @param quid the ID of the Question for which this chit will be valid
+     * @param theQuestion the Question for which this chit will be valid
      * @return signed, i.e. encrypted with the Question's private key, version of blinded chit
      */
-    public synchronized String signMeChit(String blindedMessageText, Voter voter, long quid) {
+    public synchronized String signMeChit(String blindedMessageText, Voter voter, Question theQuestion) {
         if (voter == null || !voter.isAllowedToVote()) {
             TroubleLogger.reportTrouble(String.format("Invalid voter trying to register ballot: %s", voter));
             return null;
         }
         String username = voter.getUsername();
-        Question theQuestion = lookUpQuestion(quid);
-        if (theQuestion == null) { return null; }
         if (!theQuestion.getStatus().equals("polling")) {
             return null; // could happen if Q closed just as a client loads
         }
