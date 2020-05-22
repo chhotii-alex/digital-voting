@@ -112,12 +112,11 @@ public class UserAdminController extends APIController {
     private boolean sendConfirmationEmail(Voter v) {
         try {
             String text = v.processEmailText(textFromResource(confirmEmailTemplate));
-            // TODO: how do we get the actual URL we're running at?
-            text = text.replaceAll("##BASEURL##", "http://localhost:8080");
+            text = text.replaceAll("##BASEURL##", getHostBaseURL());
             emailSender.sendEmail(v.getEmail(), "please confirm your new email", text);
 
             text = v.processEmailText(textFromResource(changeEmailNoticeTemplate));
-            emailSender.sendEmail(v.getOldEmail(), "your new email address on your account was changed", text);
+            emailSender.sendEmail(v.getOldEmail(), "your email address on your account was changed", text);
 
             return true;
         }
@@ -150,8 +149,12 @@ public class UserAdminController extends APIController {
     public ResponseEntity handleFileUpload(@RequestHeader HttpHeaders headers,
                                    @RequestParam("file") MultipartFile file) {
         loginManager.validateAdminUser(headers);
-        loginManager.parseUploadedVoterList(file);
-        return redirectToPage("/success.html");
+        if (loginManager.parseUploadedVoterList(file)) {
+            return redirectToPage("/success.html");
+        }
+        else {
+            return redirectToPage("/uploaderrors.html");
+        }
     }
 
 

@@ -221,7 +221,6 @@ public class LoginController extends APIController {
             // this would be wtf
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to change password");
         }
-        /* TODO: Is user logged out now? Why??? Should they be? */
         return redirectToPage("/success.html");
     }
 

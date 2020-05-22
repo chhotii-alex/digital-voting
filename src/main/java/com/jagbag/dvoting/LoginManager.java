@@ -285,7 +285,6 @@ public class LoginManager {
     public boolean sendConfirmationEmail(Voter v) {
         try {
             String text = v.processEmailText(APIController.textFromResource(confirmEmailTemplate));
-            // TODO: how do we get the actual URL we're running at?
             text = text.replaceAll("##BASEURL##", loginController.getHostBaseURL());
             emailSender.sendEmail(v.getEmail(), "please confirm your email", text);
             return true;

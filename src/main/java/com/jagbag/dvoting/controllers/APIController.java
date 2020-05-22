@@ -32,6 +32,7 @@ import java.util.Map;
  * Thus, no guilt here for the lack of hypermedia HATEOAS links in any of the returned results.
  */
 public class APIController {
+    // TODO: this should be overridden by an environment variable or command line argument as needed
     @Value( "${base-url}" )
     private String hostBaseURL;
 

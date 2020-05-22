@@ -366,7 +366,7 @@ class Ballot {
         let payload = this.generatePayload();
         let json = JSON.stringify(payload);
         let encoded = encodeURIComponent(json);
-        this.voteSubmissionURL = "https://localhost:8443/ballot/" + this.theQuestion.id
+        this.voteSubmissionURL = location.origin + "/ballot/" + this.theQuestion.id
             + "/" + this.endpoint + "?data=" + encoded;
         Vue.nextTick( () => {
             var text = document.getElementById('url_' + this.theQuestion.id);
