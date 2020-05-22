@@ -211,7 +211,7 @@ public class LoginController extends APIController {
              */
             throw new BadRequestException();
         }
-        if (null == loginManager.validateLoginCredentials(v.getUsername(), oldPassword)) {
+        if (null == loginManager.validateLoginCredentials(v.getUsername(), oldPassword, false)) {
             /* TODO: test this
              */
             return redirectToPage("/mistyped_password_password_change_attempt.html");

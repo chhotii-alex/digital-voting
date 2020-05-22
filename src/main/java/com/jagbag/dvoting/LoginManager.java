@@ -42,13 +42,19 @@ public class LoginManager {
     private Map<String, Long> backoffPerLogin = new HashMap<String, Long>();
 
     public Voter validateLoginCredentials(String username, String password) {
+        return validateLoginCredentials(username, password, true);
+    }
+
+    public Voter validateLoginCredentials(String username, String password, boolean doNewToken) {
         Voter v = voterListManager.getForUsername(username);
         if (v == null) {
             return null;
         }
         try {
             if (v.checkPassword(password)) {
-                createTokenForUser(username);
+                if (doNewToken) {
+                    createTokenForUser(username);
+                }
                 return v;
             }
             else {
