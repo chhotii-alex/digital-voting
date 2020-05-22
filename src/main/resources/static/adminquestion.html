@@ -24,52 +24,8 @@
         Welcome, {{ name }}
         <input type="submit" value="Log Out" class="loginbutton" >
     </form>
-    <p/>
     <a href="/landing">Return to Main Page</a>
     <div v-show="admin">
-        <span v-show="showingUsers" >
-            <a href="upload.html">Bulk upload of voter list...</a><br/>
-            <b>Users:</b><table>
-                <thead><tr>
-                    <th style="text-align:left">Name</th>
-                    <th style="text-align:left">Email</th>
-                    <th> </th>
-                    <th> </th>
-                </tr></thead>
-                <tbody>
-                    <tr v-for="user in allusers" >
-                        <td> {{ user.name }}  </td>
-                        <td>{{ user.currentEmail }} </td>
-                        <td>
-                            <button v-show="!user.allowedToVote" v-on:click="user.grantVoting()" class="borderless" >
-                                <i class="fa fa-square-o wide20" aria-hidden="true" aria-label="cannot vote"></i>
-                                Voting
-                            </button>
-                            <button v-show="user.allowedToVote" v-on:click="user.revokeVoting()" class="borderless" >
-                                <i class="fa fa-check-square-o wide20" aria-hidden="true" aria-label="can vote"></i>
-                                Voting
-                            </button>
-                        </td>
-                        <td>
-                            <button v-show="!user.admin" v-on:click="user.grantAdmin()" class="borderless" >
-                                <i class="fa fa-square-o wide20" aria-hidden="true" aria-label="cannot vote"></i>
-                                Admin
-                            </button>
-                            <button v-show="user.admin" v-on:click="user.revokeAdmin()" class="borderless" >
-                                <i class="fa fa-check-square-o wide20" aria-hidden="true" aria-label="can vote"></i>
-                                Admin
-                            </button>
-                        </td>
-                    </tr>
-]               </tbody>
-            </table>
-            <button v-on:click="fetchUsers" class="bigbutton" >Refresh Users</button>
-            <span class="fineprint" >Last fetched: {{ userRefreshTime }} </span>
-        </span>
-        <span v-if="!showingUsers" >
-            <button v-on:click="fetchUsers" class="bigbutton" >View Users</button><br/>
-        </span>
-        <hr/>
         <div v-if="showingQuestions" >
             <div v-if="!allquestions.length" class="fineprint" >No questions to show</div>
         </div>
@@ -214,7 +170,7 @@
             </table>
         </div>
         <span v-show="!showingQuestions" >
-            <button v-on:click="startRepeatedlyUpdatingQuestions" class="bigbutton" >View Questions</button>
+            <button v-on:click="startRepeatedlyUpdatingQuestions" class="bigbutton bigbig" >View Questions</button>
         </span>
         <div v-show="showingQuestions" >
             <button  class="bigbutton"  v-on:click="newQuestionSingle" >Create New Single-Choice Question</button>
@@ -231,6 +187,6 @@
     </div>
 </div>
 <script src="ranked.js?version=2"></script>
-<script src="admin.js?version=2"></script>
+<script src="adminquestion.js?version=2"></script>
 </body>
 </html>

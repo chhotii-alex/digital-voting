@@ -42,8 +42,11 @@ function checkNewPasswords(e) {
     </form>
     <p/>
     <div v-show="admin">
-        <a href="admin.html"  >Administration Page&mdash; Manage Voter Permissions and Questions</a>
-        <p/>
+        <fieldset class="roomy">
+            <legend>Administration Pages</legend>
+            <a href="adminvoter.html"  >Manage Voter Permissions</a><p/>
+            <a href="adminquestion.html"  >Manage Questions</a><p/>
+        </fieldset>
     </div>
     <div v-show="allowedToVote" >
         <b><i>

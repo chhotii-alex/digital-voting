@@ -244,51 +244,6 @@ class AdministratableQuestion extends Question {
         return (this.status == 'new');
     }
 }
-class Voter {
-    constructor(obj) {
-        this.currentEmail = obj.currentEmail;
-        this.name = obj.name;
-        this.username = obj.username;
-        this.allowedToVote = obj.allowedToVote;
-        this.admin = obj.admin;
-    };
-    grantVoting() {
-        userActive();
-        this.allowedToVote = true;
-        this.savePrivChanges();
-    }
-    revokeVoting() {
-        userActive();
-        this.allowedToVote = false;
-        this.savePrivChanges();
-    }
-    grantAdmin() {
-        userActive();
-        this.admin = true;
-        this.savePrivChanges();
-    }
-    revokeAdmin() {
-        userActive();
-        let prompt = "Are you sure you want to revoke admin privileges from " + this.name + "?";
-        userActive();
-        let response = confirm(prompt);
-        userActive();
-        if (response) {
-            this.admin = false;
-            this.savePrivChanges();
-        }
-    }
-    savePrivChanges() {
-        let url = "voters/" + this.username + "/priv";
-        let promise = axios.patch(url, this);
-        promise.then(function (response) {
-            adminApp.fetchUsers();
-        })
-        .catch(function (error) {
-            handleQueryError(error);
-        });
-    }
-}
 var adminApp = new Vue({
     el: '#adminapp',
     data: {
@@ -304,9 +259,6 @@ var adminApp = new Vue({
         questionRefreshTime: '',
         showOldQuestions: false,
         areAnyQuestionsOld: false,
-        showingUsers: false,
-        userRefreshTime: '',
-        allusers: [],
         errorText: '',
         updateTimerToken: '',
     },
@@ -316,6 +268,7 @@ var adminApp = new Vue({
         let url = "voters/" + this.$data.username;
         let aPromise = axios.get(url);
         aPromise.then(response => this.processUserInfo(response), error => handleQueryError(error));
+        this.startRepeatedlyUpdatingQuestions();
     },
     watch: {
         showOldQuestions: function(val) {
@@ -420,23 +373,6 @@ var adminApp = new Vue({
         removeQuestion: function(q) {
             var index = this.$data.allquestions.findIndex( (element) => element == q );
             this.$data.allquestions.splice(index, 1);
-        },
-        fetchUsers: function() {
-            userActive();
-            let url = "voters/";
-            let promise = axios.get(url);
-            promise.then(response => this.processUserList(response), error => handleQueryError(error));
-        },
-        processUserList: function(response) {
-            this.$data.showingUsers = true;
-            this.$data.userRefreshTime = new Date();
-            this.$data.allusers = [];
-            var i;
-            for (i = 0; i < response.data.length; ++i) {
-                var obj = response.data[i];
-                v = new Voter(obj);
-                this.$data.allusers.push(v);
-            }
         },
     },
 });

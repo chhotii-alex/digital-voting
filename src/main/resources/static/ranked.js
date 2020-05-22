@@ -206,7 +206,6 @@ function tabulateRankedChoiceResults(question, report) {
                     roundResults.push({name: candidate, votes: perCandidateTotals[candidate]});
                 }
     	        roundResults.sort( (a, b) => b.votes-a.votes );
-	            console.log(roundResults);
                 var possibleWinner = roundResults[0];
                 if ((possibleWinner.votes/remainingBallotsThisRound) > 0.5) {
                     victor = possibleWinner.name;
@@ -233,10 +232,7 @@ function tabulateRankedChoiceResults(question, report) {
                                 { name:item, rank:eliminationPriorityQueue.indexOf(item) });
                     }
                     possibleEliminatedCandidatesWithRanking.sort( (a,b) => a.rank-b.rank );
-                    console.log(possibleEliminatedCandidatesWithRanking[0].name);
                     eliminatedCandidates.push(possibleEliminatedCandidatesWithRanking[0].name);
-                    console.log("Eliminated candidates now:");
-                    console.log(eliminatedCandidates);
                 }
                 rounds.push(roundResults);
                 if (rounds.length > 5) break;

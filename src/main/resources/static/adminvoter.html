@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to the Digital Voting administration page!</title>
+    <!-- TODO: use deployment version of Vue; see console for link to Vue deployment pointer -->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
+    <script src="googclosure.js"></script>
+    <script src="cookie.js"></script>
+    <!-- TODO: when code is stable, take out query string from .js includes to speed client loading -->
+    <script src="question.js?version=2"></script>
+    <script src="util.js?version=2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
+</head>
+<body>
+<link rel="stylesheet" type="text/css" href="voting.css" >
+<h1>
+    The On-line Digital Voting Administration Page
+</h1>
+<div id="adminapp">
+    <form action="logout"  >
+        Welcome, {{ name }}
+        <input type="submit" value="Log Out" class="loginbutton" >
+    </form>
+    <p/>
+    <a href="/landing">Return to Main Page</a>
+    <div v-show="admin">
+            <b>Users:</b><table>
+                <thead><tr>
+                    <th style="text-align:left">Name</th>
+                    <th style="text-align:left">Email</th>
+                    <th> </th>
+                    <th> </th>
+                </tr></thead>
+                <tbody>
+                    <tr v-for="user in allusers" >
+                        <td> {{ user.name }}  </td>
+                        <td>{{ user.currentEmail }} </td>
+                        <td>
+                            <button v-show="!user.allowedToVote" v-on:click="user.grantVoting()" class="borderless" >
+                                <i class="fa fa-square-o wide20" aria-hidden="true" aria-label="cannot vote"></i>
+                                Voting
+                            </button>
+                            <button v-show="user.allowedToVote" v-on:click="user.revokeVoting()" class="borderless" >
+                                <i class="fa fa-check-square-o wide20" aria-hidden="true" aria-label="can vote"></i>
+                                Voting
+                            </button>
+                        </td>
+                        <td>
+                            <button v-show="!user.admin" v-on:click="user.grantAdmin()" class="borderless" >
+                                <i class="fa fa-square-o wide20" aria-hidden="true" aria-label="cannot vote"></i>
+                                Admin
+                            </button>
+                            <button v-show="user.admin" v-on:click="user.revokeAdmin()" class="borderless" >
+                                <i class="fa fa-check-square-o wide20" aria-hidden="true" aria-label="can vote"></i>
+                                Admin
+                            </button>
+                        </td>
+                    </tr>
+               </tbody>
+            </table>
+            <button v-on:click="fetchUsers" class="bigbutton" >Refresh Users</button>
+            <span class="fineprint" >Last fetched: {{ userRefreshTime }} </span>
+        </span>
+        <br/>
+        <a href="upload.html">Bulk upload of voter list...</a><br/>
+    </div>
+</div>
+<script src="adminvoter.js?version=2"></script>
+</body>
+</html>
