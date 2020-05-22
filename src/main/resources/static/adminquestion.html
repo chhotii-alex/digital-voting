@@ -2,9 +2,235 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Welcome to the Digital Voting administration page!</title>
+    <!-- TODO: use deployment version of Vue; see console for link to Vue deployment pointer -->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
+    <script src="googclosure.js"></script>
+    <script src="cookie.js"></script>
+    <!-- TODO: when code is stable, take out query string from .js includes to speed client loading -->
+    <script src="question.js?version=2"></script>
+    <script src="util.js?version=2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></head>
 </head>
 <body>
-$END$
+<link rel="stylesheet" type="text/css" href="voting.css" >
+<h1>
+    The On-line Digital Voting Administration Page
+</h1>
+<div id="adminapp">
+    <form action="logout"  >
+        Welcome, {{ name }}
+        <input type="submit" value="Log Out" class="loginbutton" >
+    </form>
+    <p/>
+    <a href="/landing">Return to Main Page</a>
+    <div v-show="admin">
+        <span v-show="showingUsers" >
+            <a href="upload.html">Bulk upload of voter list...</a><br/>
+            <b>Users:</b><table>
+                <thead><tr>
+                    <th style="text-align:left">Name</th>
+                    <th style="text-align:left">Email</th>
+                    <th> </th>
+                    <th> </th>
+                </tr></thead>
+                <tbody>
+                    <tr v-for="user in allusers" >
+                        <td> {{ user.name }}  </td>
+                        <td>{{ user.currentEmail }} </td>
+                        <td>
+                            <button v-show="!user.allowedToVote" v-on:click="user.grantVoting()" class="borderless" >
+                                <i class="fa fa-square-o wide20" aria-hidden="true" aria-label="cannot vote"></i>
+                                Voting
+                            </button>
+                            <button v-show="user.allowedToVote" v-on:click="user.revokeVoting()" class="borderless" >
+                                <i class="fa fa-check-square-o wide20" aria-hidden="true" aria-label="can vote"></i>
+                                Voting
+                            </button>
+                        </td>
+                        <td>
+                            <button v-show="!user.admin" v-on:click="user.grantAdmin()" class="borderless" >
+                                <i class="fa fa-square-o wide20" aria-hidden="true" aria-label="cannot vote"></i>
+                                Admin
+                            </button>
+                            <button v-show="user.admin" v-on:click="user.revokeAdmin()" class="borderless" >
+                                <i class="fa fa-check-square-o wide20" aria-hidden="true" aria-label="can vote"></i>
+                                Admin
+                            </button>
+                        </td>
+                    </tr>
+]               </tbody>
+            </table>
+            <button v-on:click="fetchUsers" class="bigbutton" >Refresh Users</button>
+            <span class="fineprint" >Last fetched: {{ userRefreshTime }} </span>
+        </span>
+        <span v-if="!showingUsers" >
+            <button v-on:click="fetchUsers" class="bigbutton" >View Users</button><br/>
+        </span>
+        <hr/>
+        <div v-if="showingQuestions" >
+            <div v-if="!allquestions.length" class="fineprint" >No questions to show</div>
+        </div>
+        <div v-show="closedQuestions.length" style="margin: 80px 20px 20px 20px;" >
+            <b>Closed Questions: </b>
+        <table style="width:100%" >
+            <thead>
+                <th style="text-align:left">Text of Question</th>
+                <th style="text-align:left">Choice Type</th>
+                <th style="text-align:left">Options</th>
+                <th style="text-align:left">Results </th>
+            </thead>
+            <tbody>
+                <tr v-for="question in closedQuestions"  >
+                    <td>
+                            <h3>
+                                {{ question.text }}
+                            </h3>
+                    </td>
+                    <td>
+                        {{ question.typeDescription() }}
+                    </td>
+                    <td>
+                        <div v-for="option in question.possibleResponses" >
+                            {{ option.text }}
+                        </div>
+                    </td>
+                    <td>
+                        <div v-if="question.shouldShowResultsDetail" >
+                            <div v-if="question.isSingleChoice()" >
+                                <span v-for="(count, opt) in question.results" >
+                                    <i>{{ opt }} :</i>  {{ count }}
+                                </span>
+                            </div>
+                            <div v-if="question.isRankedChoice()" >
+                                <div v-for="outcome in question.outcomes" >
+                                    <div v-for="(round, num) in outcome.rounds" >
+                                        Round {{ num+1 }}:
+                                        <span v-for="result in round">
+                                            {{ result.name }}: {{ result.votes }}
+                                        </span>
+                                    </div>
+                                    <i><b>Winner:</b> {{ outcome.winner }} </i>
+                                    <hr/>
+                                </div>
+                            </div>
+                        </div>
+                        <span v-if="question.numVotersResponded || question.shouldShowResultsDetail" >
+                            <!-- TODO: button to download spreadsheet of votes -->
+                            <b>Total number of voters who voted on this: </b> {{ question.numVotersResponded }}
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+        <div v-show="pollingQuestions.length" style="margin: 80px 20px 20px 20px;" >
+            <b>Currently Polling Questions: </b>
+            <table style="width:100%" >
+                <thead>
+                <th style="text-align:left">Text of Question</th>
+                <th style="text-align:left">Choice Type</th>
+                <th style="text-align:left">Options</th>
+                <th style="text-align:left"> </th>
+                </thead>
+                <tbody>
+                <tr v-for="question in pollingQuestions"  >
+                    <td>
+                            <h3>
+                                {{ question.text }}
+                            </h3>
+                    </td>
+                    <td>
+                        {{ question.typeDescription() }}
+                    </td>
+                    <td>
+                        <div v-for="option in question.possibleResponses" >
+                            {{ option.text }}
+                        </div>
+                    </td>
+                    <td>
+                        <button  class="bigbutton"
+                                 v-show="question.canBeClosed()" v-on:click="question.closeMe()">End Polling</button>
+                        <span v-if="question.total || question.shouldShowResultsDetail" >
+                            <b>Total votes counted: </b> {{ question.total }}
+                        </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div v-show="newQuestions.length" style="margin: 80px 20px 20px 20px;" >
+            <b>New (Never Posted) Questions: </b>
+            <table style="width:100%" >
+                <tbody>
+                    <tr v-for="question in newQuestions"  > <td>
+                        <span class="row" >
+                            <span style="text-align: right" class="col-1">
+                                Text of Question:
+                            </span>
+                            <span class="col-7" >
+                                <input v-model="question.text" class="widest" />
+                            </span>
+                            <span class="col-1"  style="text-align: center" >
+                                {{ question.typeDescription() }}
+                            </span>
+                        </span>
+                        <div v-for="(option, index) in question.possibleResponses" >
+                            <span class="row" >
+                                <span style="text-align: right" class="col-2" >
+                                    Option {{ index+1 }}.
+                                </span>
+                                <span class="col-7">
+                                    <input v-model="option.text" size="20" maxlength="80" />
+                                    <button  class="borderless"
+                                         v-show="question.canDeleteOption()" v-on:click="question.deleteOption(option.text)" >
+                                        <i class="fa fa-trash" aria-hidden="true" aria-label="delete" ></i>
+                                    </button>
+                                </span>
+                            </span>
+                        </div>
+                        <span class="row">
+                            <span class="col-2" ></span>
+                            <span class="col-1">
+                                <button  class="borderless" aria-label="add option" v-on:click="question.addOption()">
+                                    <i class="fa fa-plus" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                            <span class="col-3" >
+                            </span>
+                            <span class="col-4" >
+                                <button class="bigbutton"
+                                        v-show="question.canBeDeleted()" v-on:click="question.deleteMe()">Delete</button>
+                                <button  class="bigbutton"
+                                     :disabled="!question.canBeSaved()" v-show="question.canBeEdited()" v-on:click="question.saveMe()">Save</button>
+                                <button  class="bigbutton"
+                                     :disabled="question.hasUnsavedChanges()" v-show="question.canBePosted()" v-on:click="question.postMe()">Start Polling</button>
+                            </span>
+                        </span>
+                    </td> </tr>
+                </tbody>
+            </table>
+        </div>
+        <span v-show="!showingQuestions" >
+            <button v-on:click="startRepeatedlyUpdatingQuestions" class="bigbutton" >View Questions</button>
+        </span>
+        <div v-show="showingQuestions" >
+            <button  class="bigbutton"  v-on:click="newQuestionSingle" >Create New Single-Choice Question</button>
+            <button  class="bigbutton"  v-on:click="newQuestionRanked" >Create New Ranked-Choice Question</button>
+        </div>
+        <div v-show="showingQuestions" >
+            <button v-on:click="startRepeatedlyUpdatingQuestions" class="bigbutton" >Refresh Questions</button>
+            <span class="fineprint" >Last fetched: {{ questionRefreshTime }} </span>
+            <span v-if="areAnyQuestionsOld" >
+                <input type="checkbox" id="showOld" v-model="showOldQuestions" />
+                <label for="showOld">Show Old Closed Questions </label>
+            </span>
+        </div>
+    </div>
+</div>
+<script src="ranked.js?version=2"></script>
+<script src="admin.js?version=2"></script>
 </body>
 </html>
