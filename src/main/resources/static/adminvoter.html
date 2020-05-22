@@ -27,7 +27,9 @@
     <p/>
     <a href="/landing">Return to Main Page</a>
     <div v-show="admin">
-            <b>Users:</b><table>
+        <fieldset class="roomy">
+            <legend>Users</legend>
+            <table>
                 <thead><tr>
                     <th style="text-align:left">Name</th>
                     <th style="text-align:left">Email</th>
@@ -61,9 +63,9 @@
                     </tr>
                </tbody>
             </table>
-            <button v-on:click="fetchUsers" class="bigbutton" >Refresh Users</button>
-            <span class="fineprint" >Last fetched: {{ userRefreshTime }} </span>
-        </span>
+        </fieldset>
+        <button v-on:click="fetchUsers" class="bigbutton" >Refresh Users</button>
+        <span class="fineprint" >Last fetched: {{ userRefreshTime }} </span>
         <br/>
         <a href="upload.html">Bulk upload of voter list...</a><br/>
     </div>
